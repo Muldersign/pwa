@@ -2714,6 +2714,17 @@ html.kb-open .sheet__footer {
   }
 }
 
+.thinking-label {
+  margin-left: 8px;
+  color: var(--text-2);
+  font-size: 13.5px;
+  animation: item-in 0.3s var(--ease-out) backwards;
+}
+
+.bubble--thinking {
+  align-items: center;
+}
+
 .turn__source {
   align-self: flex-start;
   margin: -4px 4px 0;

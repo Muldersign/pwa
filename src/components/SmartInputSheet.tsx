@@ -192,11 +192,7 @@ export function SmartInputSheet({ open, prefill, onClose, onOpenDay }: Props) {
           <div key={turn.id} className="turn">
             <div className="bubble bubble--user">{turn.input}</div>
             {turn.status === 'thinking' && (
-              <div className="bubble bubble--assistant bubble--thinking" aria-label="Bezig met verwerken">
-                <span className="dot" />
-                <span className="dot" />
-                <span className="dot" />
-              </div>
+              <ThinkingBubble ai={aiActive} />
             )}
             {turn.status === 'done' && turn.changes && (
               <SmartConfirmation
@@ -244,5 +240,23 @@ export function SmartInputSheet({ open, prefill, onClose, onOpenDay }: Props) {
         ))}
       </div>
     </Sheet>
+  );
+}
+
+/** Typing dots; after a few seconds a short status, so a slow AI answer never looks stuck. */
+function ThinkingBubble({ ai }: { ai: boolean }) {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  const label = !ai || seconds < 3 ? null : seconds < 15 ? 'Claude denkt na…' : seconds < 30 ? 'Nog even geduld…' : 'Duurt langer dan normaal…';
+  return (
+    <div className="bubble bubble--assistant bubble--thinking" aria-label="Bezig met verwerken">
+      <span className="dot" />
+      <span className="dot" />
+      <span className="dot" />
+      {label && <span className="thinking-label">{label}</span>}
+    </div>
   );
 }

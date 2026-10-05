@@ -18,7 +18,7 @@ export const localParser: CommandParser = {
   parse: async (input, now) => parseLocally(input, now),
 };
 
-const AI_TIMEOUT_MS = 20_000;
+const AI_TIMEOUT_MS = 45_000;
 
 /**
  * Claude via the Supabase Edge Function "parse" (supabase/functions/parse).
@@ -58,7 +58,7 @@ export const supabaseAIParser: CommandParser = {
       if (!res.ok) throw new Error(body.error ?? body.message ?? body.msg ?? `HTTP ${res.status}`);
       return { actions: sanitizeActions(body.actions), source: 'ai' };
     } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') throw new Error('AI reageerde niet binnen 20 seconden');
+      if (e instanceof DOMException && e.name === 'AbortError') throw new Error('AI reageerde niet binnen 45 seconden');
       throw e;
     } finally {
       clearTimeout(timer);
