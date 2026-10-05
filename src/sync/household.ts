@@ -29,6 +29,9 @@ const toHousehold = (r: HouseholdRow): Household => ({ id: r.id, name: r.name, i
 
 /** Translates database errors into short Dutch messages. */
 export function friendlyError(message: string): string {
+  if (/schema cache|Could not find the (function|table)|relation .* does not exist/i.test(message)) {
+    return 'De database is nog niet ingericht. Voer in Supabase (SQL Editor) het script supabase/migrations/20261005120000_onze_week.sql uit en probeer het opnieuw.';
+  }
   if (/invalid_invite_code/.test(message)) return 'Deze code is onbekend. Controleer de code en probeer het opnieuw.';
   if (/Invalid login credentials/i.test(message)) return 'E-mailadres of wachtwoord klopt niet.';
   if (/Email not confirmed/i.test(message)) return 'Bevestig eerst je e-mailadres via de link in je mail.';

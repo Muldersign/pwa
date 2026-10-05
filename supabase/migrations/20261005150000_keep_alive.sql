@@ -25,3 +25,6 @@ $$;
 
 revoke all on function public.keep_alive() from public;
 grant execute on function public.keep_alive() to anon, authenticated;
+
+-- Let the API pick up the new tables and functions immediately.
+notify pgrst, 'reload schema';

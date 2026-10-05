@@ -248,3 +248,6 @@ grant execute on function public.is_household_member(uuid) to authenticated;
 -- ---------------------------------------------------------------------------
 
 alter publication supabase_realtime add table public.activities, public.meals, public.grocery_items, public.day_notes;
+
+-- Let the API pick up the new tables and functions immediately.
+notify pgrst, 'reload schema';
