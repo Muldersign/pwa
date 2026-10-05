@@ -3,7 +3,7 @@ import type { ParseResult } from '../../domain/actions';
 import { fromISODate, toISODate } from '../../lib/dates';
 import { MEAL_LABELS } from '../../lib/timeline';
 import type { PlannerSnapshot } from '../../storage/repository';
-import { supabase } from '../../sync/supabaseClient';
+import { getCurrentSession, supabase, supabaseKey, supabaseUrl } from '../../sync/supabaseClient';
 import { parseLocally } from './localParser';
 import { sanitizeActions } from './validate';
 
@@ -18,46 +18,51 @@ export const localParser: CommandParser = {
   parse: async (input, now) => parseLocally(input, now),
 };
 
-const AI_TIMEOUT_MS = 25_000;
+const AI_TIMEOUT_MS = 20_000;
 
 /**
  * Claude via the Supabase Edge Function "parse" (supabase/functions/parse).
- * The signed-in user's session authorizes the call; the API key lives in the
- * function's secrets and never reaches the browser.
+ * Called with plain fetch and a hard timeout, using the cached session token,
+ * so a stuck auth client can never leave the chat waiting.
  */
 export const supabaseAIParser: CommandParser = {
   name: 'ai',
   async parse(input, now, context) {
-    if (!supabase) throw new Error('Supabase is niet ingesteld');
-    const { data: session } = await supabase.auth.getSession();
-    if (!session.session) throw new Error('Log in (Meer → Samen) om AI te gebruiken');
-
-    const call = supabase.functions.invoke('parse', {
-      body: {
-        input,
-        today: toISODate(now),
-        weekday: now.toLocaleDateString('nl-NL', { weekday: 'long' }),
-        time: now.toTimeString().slice(0, 5),
-        context,
-      },
-    });
-    const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('AI reageerde niet op tijd')), AI_TIMEOUT_MS));
-    const { data, error } = await Promise.race([call, timeout]);
-    if (error) {
-      // FunctionsHttpError carries the response; surface the function's own message.
-      let detail = error.message;
-      const ctx = (error as { context?: Response }).context;
-      if (ctx && typeof ctx.json === 'function') {
-        try {
-          const b = (await ctx.json()) as { error?: string };
-          if (b.error) detail = b.error;
-        } catch {
-          // keep the generic message
-        }
-      }
-      throw new Error(detail);
+    if (!supabaseUrl || !supabaseKey) throw new Error('Supabase is niet ingesteld');
+    const session = getCurrentSession();
+    if (!session) throw new Error('Log in (Meer → Samen) om AI te gebruiken');
+    if (session.expires_at && session.expires_at * 1000 < Date.now()) {
+      throw new Error('Inlogsessie verlopen, open de app opnieuw');
     }
-    return { actions: sanitizeActions((data as { actions?: unknown })?.actions), source: 'ai' };
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/parse`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseKey,
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          input,
+          today: toISODate(now),
+          weekday: now.toLocaleDateString('nl-NL', { weekday: 'long' }),
+          time: now.toTimeString().slice(0, 5),
+          context,
+        }),
+        signal: controller.signal,
+      });
+      const body = (await res.json().catch(() => ({}))) as { actions?: unknown; error?: string; message?: string; msg?: string };
+      if (!res.ok) throw new Error(body.error ?? body.message ?? body.msg ?? `HTTP ${res.status}`);
+      return { actions: sanitizeActions(body.actions), source: 'ai' };
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') throw new Error('AI reageerde niet binnen 20 seconden');
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
   },
 };
 

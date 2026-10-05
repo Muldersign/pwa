@@ -80,6 +80,8 @@ Actietypes:
 Regels:
 - Eén zin kan meerdere opdrachten bevatten: geef voor elke opdracht een aparte actie, in de volgorde van de zin.
   "Woensdag pasta pesto eten en haal pasta, pesto en kip" = 1 ADD_MEAL + 3 ADD_GROCERY.
+- Meerdere dagen voor hetzelfde ("di + do training", "maandag en woensdag sporten") = één actie per dag.
+- Afkortingen: ma, di, wo, do, vr, za, zo. Een tijdbereik "19:45-21:45" = time 19:45, endTime 21:45.
 - Datums als YYYY-MM-DD, tijden als HH:MM (24-uurs). De week begint op maandag.
 - "dinsdag" = de eerstvolgende dinsdag vanaf vandaag (vandaag telt mee). "dinsdag komende week" / "volgende week dinsdag" = dinsdag van de volgende kalenderweek. "morgenavond", "vanavond", "dit weekend" (zaterdag) gewoon omrekenen.
 - Zonder datum: vandaag, of de datum van de vorige opdracht in dezelfde zin.
