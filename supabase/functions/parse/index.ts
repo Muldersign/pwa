@@ -11,6 +11,8 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.131.0';
 
 const MODEL = 'claude-opus-5-5';
+/** Shown in every error, so it is easy to see which deployment answered. */
+const FUNCTION_VERSION = 'v3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -109,8 +111,9 @@ interface ParseBody {
   context?: unknown;
 }
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
+function json(body: Record<string, unknown>, status = 200) {
+  if (typeof body.error === 'string') body = { ...body, error: `${body.error} [parse ${FUNCTION_VERSION}]` };
+  return new Response(JSON.stringify({ ...body, version: FUNCTION_VERSION }), {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
