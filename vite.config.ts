@@ -6,7 +6,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(() => {
   return {
     define: {
-      __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '1.0.0'),
+      __APP_VERSION__: JSON.stringify(
+        `${process.env.npm_package_version ?? '1.0.0'} · build ${new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`,
+      ),
     },
     plugins: [
       react(),
