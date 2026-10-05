@@ -84,7 +84,18 @@ De app blijft local-first: alles wordt eerst op het toestel opgeslagen (werkt of
 - Verwijderen gebeurt als *tombstone* (`deleted_at`), zodat het ook op het andere toestel verdwijnt; *last write wins* wordt in de database afgedwongen.
 - Getest met een echte Postgres + PostgREST (RLS, codes, conflicten) en met `src/sync/syncEngine.test.ts` (twee toestellen, offline, undo).
 
-Let op: een gratis Supabase-project wordt gepauzeerd na een week zonder gebruik; in de app kun je dan gewoon doorwerken, en na het hervatten in het Supabase-dashboard synchroniseert alles weer.
+### Pauzeren voorkomen (keep-alive)
+
+Een gratis Supabase-project wordt gepauzeerd na 7 dagen zonder activiteit. Daarom:
+
+- `supabase/migrations/20261005150000_keep_alive.sql` (eenmalig uitvoeren in de SQL Editor) maakt de functie `keep_alive()`, die één hartslag-rij bijwerkt. Die functie geeft geen planningsdata prijs.
+- `.github/workflows/supabase-keep-alive.yml` roept die functie elke 3 dagen aan via GitHub Actions (en handmatig via *Actions → Supabase keep-alive → Run workflow*). Geplande workflows draaien alleen vanaf de standaardbranch (`main`).
+- Alternatief/extra: een cronjob op Cloud86, bijv. elke dag:
+  `curl -s -X POST "https://<project>.supabase.co/rest/v1/rpc/keep_alive" -H "apikey: <publishable key>" -H "Content-Type: application/json" -d '{}'`
+
+Is het project toch gepauzeerd, dan werkt de app gewoon lokaal door; na *Restore* in het dashboard synchroniseert alles weer.
+
+De productie-instellingen (URL + publishable key) staan in `.env.production`.
 
 ## Live zetten op Cloud86 (of andere Apache-hosting)
 

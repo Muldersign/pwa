@@ -1,0 +1,36 @@
+name: Supabase keep-alive
+
+# Supabase pauses free projects after 7 days without activity. This pings the
+# database every 3 days (and can be run by hand from the Actions tab).
+on:
+  schedule:
+    - cron: '17 6 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .env.production
+          sparse-checkout-cone-mode: false
+      - name: Ping Supabase
+        run: |
+          set -euo pipefail
+          # Public values from .env.production (URL + publishable key).
+          URL=$(grep '^VITE_SUPABASE_URL=' .env.production | cut -d= -f2- | sed -E 's#/rest/v1/?$##; s#/$##')
+          KEY=$(grep '^VITE_SUPABASE_PUBLISHABLE_KEY=' .env.production | cut -d= -f2-)
+          for attempt in 1 2 3; do
+            status=$(curl -sS -o response.txt -w '%{http_code}' -X POST "$URL/rest/v1/rpc/keep_alive" \
+              -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}') || status=000
+            echo "Attempt $attempt: HTTP $status $(cat response.txt 2>/dev/null)"
+            if [ "$status" = "200" ]; then exit 0; fi
+            sleep 30
+          done
+          echo "::error::Supabase keep-alive failed. Is the project paused, or was supabase/migrations/20261005150000_keep_alive.sql not run yet?"
+          exit 1
