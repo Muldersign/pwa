@@ -1978,6 +1978,7 @@ html.kb-open .add-item {
   display: flex;
   flex-direction: column;
   max-height: calc(var(--vvh) - var(--safe-top) - 12px);
+  overflow: hidden;
   border-radius: 28px 28px 0 0;
   background: var(--surface);
   box-shadow: 0 -10px 40px rgba(10, 22, 16, 0.12);
