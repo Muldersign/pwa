@@ -131,14 +131,17 @@ api/parse.ts       serverless route (Vercel-stijl) → server/aiParse.ts
 
 De stroom is altijd: **tekst → `parseNaturalLanguageCommand()` → `PlannerAction[]` → `executeActions()` → repository**. Wie een andere parser wil (eigen backend, ander model) implementeert `CommandParser` in `services/nlp/index.ts`; de rest van de app blijft gelijk.
 
-### AI-verwerking (optioneel)
+### AI-verwerking (Claude via Supabase Edge Function)
 
-Zonder configuratie gebruikt de app de lokale parser. Met AI:
+De slimme invoer gebruikt Claude zodra je bent ingelogd (Meer → Samen) en online bent; anders, of bij een storing, de lokale parser. Onder elk antwoord staat "Verwerkt met AI" of "Lokaal verwerkt".
 
-1. Zet `ANTHROPIC_API_KEY` als **server**-omgevingsvariabele (nooit met `VITE_`-prefix).
-2. Bouw de frontend met `VITE_AI_PARSE_ENDPOINT=/api/parse` (zie `.env.example`).
+- `supabase/functions/parse/index.ts` – Edge Function: stuurt de zin + een compacte lijst van jullie bestaande items naar Claude (`claude-opus-5-5`, structured output) en geeft acties terug. De app valideert ze nog eens (`sanitizeActions`).
+- De API-sleutel staat als **secret** in Supabase (`ANTHROPIC_API_KEY`) en komt nooit in de browser. *Verify JWT* staat aan: alleen ingelogde gebruikers kunnen de functie aanroepen.
 
-`npm run dev` serveert `/api/parse` lokaal met dezelfde handler; op Vercel draait `api/parse.ts`. De sleutel komt nooit in de browser. Het antwoord van het model wordt gevalideerd (`sanitizeActions`) en bij een fout, timeout of offline valt de app terug op de lokale parser. Server-side fallbacks bij een weigering staan aan (`fallbacks: "default"`).
+Instellen:
+1. Maak een API-sleutel op [console.anthropic.com](https://console.anthropic.com) (Settings → API keys) en zet er wat tegoed op.
+2. Supabase → **Edge Functions → Secrets** → `ANTHROPIC_API_KEY` = je sleutel.
+3. Supabase → **Edge Functions → Deploy a new function → Via editor**, naam `parse`, plak `supabase/functions/parse/index.ts`, *Deploy*. (Of: `supabase functions deploy parse`.)
 
 ### Datamodel
 

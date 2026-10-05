@@ -2714,6 +2714,17 @@ html.kb-open .sheet__footer {
   }
 }
 
+.turn__source {
+  align-self: flex-start;
+  margin: -4px 4px 0;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.turn__source.is-warning {
+  color: #9a6b0b;
+}
+
 .confirm-card {
   align-self: stretch;
   padding: 14px 14px 8px;

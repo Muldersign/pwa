@@ -56,6 +56,8 @@ export interface ParseResult {
   };
   /** Which engine produced the result. */
   source: 'local' | 'ai';
+  /** Set when the AI was tried but failed, and the local parser was used instead. */
+  aiError?: string;
 }
 
 export const ACTION_TYPES: PlannerActionType[] = [

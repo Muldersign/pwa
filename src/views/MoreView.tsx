@@ -15,7 +15,8 @@ import { useRef } from 'react';
 import { SyncSection } from '../components/SyncSection';
 import { useToast } from '../components/Toast';
 import { isIOS, isStandalone, useInstallPrompt } from '../lib/install';
-import { AI_ENDPOINT } from '../services/nlp';
+import { AI_AVAILABLE } from '../services/nlp';
+import { useSync } from '../sync/SyncContext';
 import { useData } from '../state/DataContext';
 import { useSettings } from '../state/settings';
 import { useUI } from '../state/UIContext';
@@ -40,6 +41,7 @@ export function MoreView() {
   const toast = useToast();
   const [settings, update] = useSettings();
   const install = useInstallPrompt();
+  const sync = useSync();
   const fileRef = useRef<HTMLInputElement>(null);
   const standalone = isStandalone();
 
@@ -100,12 +102,14 @@ export function MoreView() {
             <span className="settings-row__body">
               <span className="settings-row__title">AI-verwerking</span>
               <span className="settings-row__sub">
-                {AI_ENDPOINT
-                  ? 'Gebruikt de AI-server voor lastige zinnen. Offline valt de app terug op de lokale verwerking.'
-                  : 'Lokale verwerking is actief en werkt volledig offline. Een AI-server kan later gekoppeld worden.'}
+                {!AI_AVAILABLE
+                  ? 'Lokale verwerking is actief. Koppel Supabase om AI te gebruiken.'
+                  : !sync.email
+                    ? 'Log hierboven in om Claude je zinnen te laten begrijpen. Tot die tijd: lokale verwerking.'
+                    : 'Claude begrijpt je zinnen. Offline of bij een storing valt de app terug op de lokale verwerking.'}
               </span>
             </span>
-            {AI_ENDPOINT ? (
+            {AI_AVAILABLE && sync.email ? (
               <button
                 type="button"
                 role="switch"

@@ -1,45 +1,15 @@
 /// <reference types="vitest/config" />
-import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-/**
- * Dev-only middleware that serves POST /api/parse with the same handler as the
- * production serverless function (api/parse.ts). The API key only ever lives in
- * the Node process, never in the browser bundle.
- */
-function aiParseDevServer(apiKey: string | undefined): Plugin {
-  return {
-    name: 'ai-parse-dev-server',
-    apply: 'serve',
-    configureServer(server) {
-      server.middlewares.use('/api/parse', async (req, res) => {
-        if (req.method !== 'POST') {
-          res.statusCode = 405;
-          res.end();
-          return;
-        }
-        const chunks: Buffer[] = [];
-        for await (const chunk of req) chunks.push(chunk as Buffer);
-        const { handleParseRequest } = await server.ssrLoadModule('/server/aiParse.ts');
-        const result = await handleParseRequest(Buffer.concat(chunks).toString('utf8'), apiKey);
-        res.statusCode = result.status;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(result.body));
-      });
-    },
-  };
-}
-
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
+export default defineConfig(() => {
   return {
     define: {
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '1.0.0'),
     },
     plugins: [
       react(),
-      aiParseDevServer(env.ANTHROPIC_API_KEY),
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: false,
@@ -71,7 +41,6 @@ export default defineConfig(({ mode }) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
           navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/api\//],
           cleanupOutdatedCaches: true,
         },
       }),

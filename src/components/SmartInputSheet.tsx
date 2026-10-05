@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import type { ParseResult, PlannerAction } from '../domain/actions';
 import type { ISODate } from '../domain/types';
 import { executeActions, type Change } from '../services/actionExecutor';
-import { AI_ENDPOINT, parseNaturalLanguageCommand } from '../services/nlp';
+import { AI_AVAILABLE, parseNaturalLanguageCommand } from '../services/nlp';
 import { useData } from '../state/DataContext';
+import { useSync } from '../sync/SyncContext';
 import { getSettings } from '../state/settings';
 import { useOnline } from '../lib/useOnline';
 import { Sheet } from './Sheet';
@@ -19,6 +20,8 @@ interface Turn {
   undone?: boolean;
   clarification?: ParseResult['clarification'];
   error?: string;
+  source?: ParseResult['source'];
+  aiError?: string;
 }
 
 const EXAMPLES = [
@@ -38,7 +41,8 @@ interface Props {
 }
 
 export function SmartInputSheet({ open, prefill, onClose, onOpenDay }: Props) {
-  const { repo } = useData();
+  const { repo, activities, meals, groceries, notes } = useData();
+  const sync = useSync();
   const online = useOnline();
   const [value, setValue] = useState('');
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -85,7 +89,11 @@ export function SmartInputSheet({ open, prefill, onClose, onOpenDay }: Props) {
     setBusy(true);
     try {
       const started = performance.now();
-      const parsed = await parseNaturalLanguageCommand(input, { useAI: getSettings().useAI });
+      const parsed = await parseNaturalLanguageCommand(input, {
+        useAI: getSettings().useAI,
+        data: { activities, meals, groceries, notes },
+      });
+      patchTurn(id, { source: parsed.source, aiError: parsed.aiError });
       // A short, deliberate pause reads as "thinking" instead of a flicker.
       const elapsed = performance.now() - started;
       if (elapsed < 420) await new Promise((r) => setTimeout(r, 420 - elapsed));
@@ -109,7 +117,7 @@ export function SmartInputSheet({ open, prefill, onClose, onOpenDay }: Props) {
     patchTurn(turn.id, { undone: true });
   };
 
-  const aiActive = !!AI_ENDPOINT && getSettings().useAI && online;
+  const aiActive = AI_AVAILABLE && getSettings().useAI && online && !!sync.email;
 
   return (
     <Sheet
@@ -164,7 +172,7 @@ export function SmartInputSheet({ open, prefill, onClose, onOpenDay }: Props) {
             <p className="chat__hello">Typ gewoon wat je wilt plannen.</p>
             <p className="chat__hint">
               Activiteiten, eten en boodschappen — ook meerdere tegelijk in één zin.
-              {!aiActive && AI_ENDPOINT && !online && (
+              {!aiActive && AI_AVAILABLE && !online && (
                 <span className="chat__offline">
                   <CloudOff size={13} /> Offline: lokale verwerking
                 </span>
@@ -200,6 +208,15 @@ export function SmartInputSheet({ open, prefill, onClose, onOpenDay }: Props) {
                   onOpenDay(date);
                 }}
               />
+            )}
+            {turn.status !== 'thinking' && turn.source && (
+              <p className={`turn__source ${turn.aiError ? 'is-warning' : ''}`}>
+                {turn.source === 'ai'
+                  ? 'Verwerkt met AI'
+                  : turn.aiError
+                    ? `AI niet bereikbaar (${turn.aiError}) — lokaal verwerkt`
+                    : 'Lokaal verwerkt'}
+              </p>
             )}
             {turn.status === 'clarify' && turn.clarification && (
               <div className="bubble bubble--assistant">
