@@ -125,8 +125,9 @@ src/
   components/      AppShell, navigatie, Sheet, SmartInputSheet, SmartConfirmation,
                    DayTimeline, TimelineItem, SwipeRow, ItemEditorSheet, Toast, …
   views/           Today, Week, Day, Groceries, More
-server/aiParse.ts  AI-verwerking (server-side, Claude API)
-api/parse.ts       serverless route (Vercel-stijl) → server/aiParse.ts
+supabase/
+  migrations/      database (tabellen, RLS, keep-alive)
+  functions/parse/ Edge Function: AI-verwerking met Claude
 ```
 
 De stroom is altijd: **tekst → `parseNaturalLanguageCommand()` → `PlannerAction[]` → `executeActions()` → repository**. Wie een andere parser wil (eigen backend, ander model) implementeert `CommandParser` in `services/nlp/index.ts`; de rest van de app blijft gelijk.
