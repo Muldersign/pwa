@@ -3,7 +3,7 @@
 -- function every few days. It writes one heartbeat row, so the database sees
 -- real activity. It exposes no planner data and is safe to call anonymously.
 
-create table public.keep_alive (
+create table if not exists public.keep_alive (
   id int primary key default 1 check (id = 1),
   last_ping timestamptz not null default now(),
   pings bigint not null default 0
@@ -12,7 +12,7 @@ create table public.keep_alive (
 alter table public.keep_alive enable row level security;
 revoke all on public.keep_alive from anon, authenticated;
 
-create function public.keep_alive()
+create or replace function public.keep_alive()
 returns timestamptz
 language sql
 security definer

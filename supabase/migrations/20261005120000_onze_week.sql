@@ -4,6 +4,8 @@
 -- its rows (row level security); nobody else can. Clients never hard-delete:
 -- they set deleted_at so the deletion syncs to other devices.
 --
+-- Safe to run more than once: it only adds what is missing.
+--
 -- Sync model: clients push rows with their own updated_at (last write wins,
 -- enforced by a trigger) and pull everything with synced_at > their cursor.
 
@@ -11,7 +13,7 @@
 -- Households & members
 -- ---------------------------------------------------------------------------
 
-create table public.households (
+create table if not exists public.households (
   id uuid primary key default gen_random_uuid(),
   name text not null default 'Ons huishouden' check (char_length(name) between 1 and 80),
   invite_code text not null unique default upper(substr(md5(random()::text || clock_timestamp()::text), 1, 6)),
@@ -19,7 +21,7 @@ create table public.households (
   created_at timestamptz not null default now()
 );
 
-create table public.household_members (
+create table if not exists public.household_members (
   household_id uuid not null references public.households (id) on delete cascade,
   user_id uuid not null references auth.users (id) on delete cascade,
   member_key text check (member_key in ('glenn', 'jessica')),
@@ -27,10 +29,10 @@ create table public.household_members (
   primary key (household_id, user_id)
 );
 
-create index household_members_user_idx on public.household_members (user_id);
+create index if not exists household_members_user_idx on public.household_members (user_id);
 
 -- Security definer so policies can use it without recursing into RLS.
-create function public.is_household_member(hid uuid)
+create or replace function public.is_household_member(hid uuid)
 returns boolean
 language sql
 stable
@@ -47,7 +49,7 @@ $$;
 -- Planner data
 -- ---------------------------------------------------------------------------
 
-create table public.activities (
+create table if not exists public.activities (
   id uuid primary key,
   household_id uuid not null references public.households (id) on delete cascade,
   title text not null,
@@ -64,7 +66,7 @@ create table public.activities (
   synced_at timestamptz not null default now()
 );
 
-create table public.meals (
+create table if not exists public.meals (
   id uuid primary key,
   household_id uuid not null references public.households (id) on delete cascade,
   title text not null,
@@ -81,7 +83,7 @@ create table public.meals (
   synced_at timestamptz not null default now()
 );
 
-create table public.grocery_items (
+create table if not exists public.grocery_items (
   id uuid primary key,
   household_id uuid not null references public.households (id) on delete cascade,
   name text not null,
@@ -97,7 +99,7 @@ create table public.grocery_items (
   synced_at timestamptz not null default now()
 );
 
-create table public.day_notes (
+create table if not exists public.day_notes (
   household_id uuid not null references public.households (id) on delete cascade,
   date date not null,
   text text not null default '',
@@ -107,15 +109,15 @@ create table public.day_notes (
   primary key (household_id, date)
 );
 
-create index activities_sync_idx on public.activities (household_id, synced_at);
-create index meals_sync_idx on public.meals (household_id, synced_at);
-create index grocery_items_sync_idx on public.grocery_items (household_id, synced_at);
-create index day_notes_sync_idx on public.day_notes (household_id, synced_at);
+create index if not exists activities_sync_idx on public.activities (household_id, synced_at);
+create index if not exists meals_sync_idx on public.meals (household_id, synced_at);
+create index if not exists grocery_items_sync_idx on public.grocery_items (household_id, synced_at);
+create index if not exists day_notes_sync_idx on public.day_notes (household_id, synced_at);
 
 -- Last write wins: an update carrying an older updated_at than the stored row
 -- is silently ignored. Every accepted write gets a fresh synced_at, which is
 -- what clients use as their pull cursor.
-create function public.sync_row_guard()
+create or replace function public.sync_row_guard()
 returns trigger
 language plpgsql
 as $$
@@ -133,12 +135,16 @@ begin
 end;
 $$;
 
+drop trigger if exists activities_sync_guard on public.activities;
 create trigger activities_sync_guard before insert or update on public.activities
   for each row execute function public.sync_row_guard();
+drop trigger if exists meals_sync_guard on public.meals;
 create trigger meals_sync_guard before insert or update on public.meals
   for each row execute function public.sync_row_guard();
+drop trigger if exists grocery_items_sync_guard on public.grocery_items;
 create trigger grocery_items_sync_guard before insert or update on public.grocery_items
   for each row execute function public.sync_row_guard();
+drop trigger if exists day_notes_sync_guard on public.day_notes;
 create trigger day_notes_sync_guard before insert or update on public.day_notes
   for each row execute function public.sync_row_guard();
 
@@ -153,30 +159,39 @@ alter table public.meals enable row level security;
 alter table public.grocery_items enable row level security;
 alter table public.day_notes enable row level security;
 
+drop policy if exists "members read household" on public.households;
 create policy "members read household" on public.households
   for select to authenticated using (public.is_household_member(id));
+drop policy if exists "members rename household" on public.households;
 create policy "members rename household" on public.households
   for update to authenticated using (public.is_household_member(id)) with check (public.is_household_member(id));
 
+drop policy if exists "members see each other" on public.household_members;
 create policy "members see each other" on public.household_members
   for select to authenticated using (public.is_household_member(household_id));
+drop policy if exists "update own membership" on public.household_members;
 create policy "update own membership" on public.household_members
   for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "leave household" on public.household_members;
 create policy "leave household" on public.household_members
   for delete to authenticated using (user_id = auth.uid());
 
+drop policy if exists "members manage activities" on public.activities;
 create policy "members manage activities" on public.activities
   for all to authenticated
   using (public.is_household_member(household_id))
   with check (public.is_household_member(household_id));
+drop policy if exists "members manage meals" on public.meals;
 create policy "members manage meals" on public.meals
   for all to authenticated
   using (public.is_household_member(household_id))
   with check (public.is_household_member(household_id));
+drop policy if exists "members manage grocery items" on public.grocery_items;
 create policy "members manage grocery items" on public.grocery_items
   for all to authenticated
   using (public.is_household_member(household_id))
   with check (public.is_household_member(household_id));
+drop policy if exists "members manage day notes" on public.day_notes;
 create policy "members manage day notes" on public.day_notes
   for all to authenticated
   using (public.is_household_member(household_id))
@@ -192,7 +207,7 @@ grant select, insert, update on public.activities, public.meals, public.grocery_
 -- Creating and joining a household (the only way to become a member)
 -- ---------------------------------------------------------------------------
 
-create function public.create_household(p_name text default 'Ons huishouden', p_member_key text default null)
+create or replace function public.create_household(p_name text default 'Ons huishouden', p_member_key text default null)
 returns public.households
 language plpgsql
 security definer
@@ -213,7 +228,7 @@ begin
 end;
 $$;
 
-create function public.join_household(p_code text, p_member_key text default null)
+create or replace function public.join_household(p_code text, p_member_key text default null)
 returns public.households
 language plpgsql
 security definer
@@ -247,7 +262,20 @@ grant execute on function public.is_household_member(uuid) to authenticated;
 -- Realtime: devices get notified of changes (RLS still applies)
 -- ---------------------------------------------------------------------------
 
-alter publication supabase_realtime add table public.activities, public.meals, public.grocery_items, public.day_notes;
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['activities', 'meals', 'grocery_items', 'day_notes'] loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end;
+$$;
 
 -- Let the API pick up the new tables and functions immediately.
 notify pgrst, 'reload schema';
