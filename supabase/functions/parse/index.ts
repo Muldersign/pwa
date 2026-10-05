@@ -18,7 +18,11 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const nullableString = { type: ['string', 'null'] };
+// Nullable fields use anyOf: the structured-output validator does not accept
+// type arrays combined with enum.
+const nullable = (schema: Record<string, unknown>) => ({ anyOf: [schema, { type: 'null' }] });
+const nullableString = nullable({ type: 'string' });
+const nullableEnum = (values: string[]) => nullable({ type: 'string', enum: values });
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -47,16 +51,16 @@ const OUTPUT_SCHEMA = {
           time: nullableString,
           endTime: nullableString,
           location: nullableString,
-          category: { type: ['string', 'null'], enum: ['work', 'sport', 'social', 'home', 'appointment', 'travel', 'other', null] },
-          mealType: { type: ['string', 'null'], enum: ['breakfast', 'lunch', 'dinner', 'snack', null] },
+          category: nullableEnum(['work', 'sport', 'social', 'home', 'appointment', 'travel', 'other']),
+          mealType: nullableEnum(['breakfast', 'lunch', 'dinner', 'snack']),
           name: nullableString,
-          quantity: { type: ['number', 'null'] },
+          quantity: nullable({ type: 'number' }),
           unit: nullableString,
           newTitle: nullableString,
           newDate: nullableString,
           newTime: nullableString,
           newLocation: nullableString,
-          assignedTo: { type: ['string', 'null'], enum: ['glenn', 'jessica', 'samen', null] },
+          assignedTo: nullableEnum(['glenn', 'jessica', 'samen']),
         },
       },
     },
