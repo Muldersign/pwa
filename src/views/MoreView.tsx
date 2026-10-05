@@ -12,6 +12,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { useRef } from 'react';
+import { SyncSection } from '../components/SyncSection';
 import { useToast } from '../components/Toast';
 import { isIOS, isStandalone, useInstallPrompt } from '../lib/install';
 import { AI_ENDPOINT } from '../services/nlp';
@@ -83,6 +84,11 @@ export function MoreView() {
           {activities.length} activiteiten · {meals.length} maaltijden · {groceries.length} producten
         </p>
       </header>
+
+      <section className="settings-group">
+        <h2 className="settings-group__title">Samen</h2>
+        <SyncSection />
+      </section>
 
       <section className="settings-group">
         <h2 className="settings-group__title">Slimme invoer</h2>

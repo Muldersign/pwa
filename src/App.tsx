@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { AppShell } from './components/AppShell';
 import { ToastProvider } from './components/Toast';
 import { DataProvider, useData } from './state/DataContext';
+import { SyncProvider } from './sync/SyncContext';
 import { tabOf, useHashRouter, type Route } from './state/router';
 import { DayView } from './views/DayView';
 import { GroceryView } from './views/GroceryView';
@@ -74,7 +75,9 @@ export default function App() {
   return (
     <ToastProvider>
       <DataProvider>
-        <Screens />
+        <SyncProvider>
+          <Screens />
+        </SyncProvider>
       </DataProvider>
     </ToastProvider>
   );

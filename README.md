@@ -58,6 +58,34 @@ De app opent dan fullscreen (standalone), houdt rekening met de notch/home-indic
 - `aanstaande dinsdag` → eerstvolgende dinsdag na vandaag, zonder vraag
 - ook: vandaag, vanavond, morgen(avond), overmorgen, dit weekend, over 2 weken, 13 oktober, 13-10, half 8, kwart over 7, van 9 tot 5
 
+## Samen gebruiken via Supabase
+
+De app blijft local-first: alles wordt eerst op het toestel opgeslagen (werkt offline) en op de achtergrond gesynchroniseerd. Wijzigingen van de ander komen live binnen via Supabase Realtime; offline wijzigingen worden verstuurd zodra je weer online bent. Bij een conflict wint de laatste wijziging.
+
+### Eenmalig instellen
+
+1. Maak op [supabase.com](https://supabase.com) een (gratis) project aan, regio bijv. *Frankfurt*.
+2. **SQL Editor** → plak de inhoud van `supabase/migrations/20261005120000_onze_week.sql` → *Run*. Dit maakt de tabellen, beveiliging (RLS), uitnodigingscodes en Realtime aan.
+3. **Authentication → URL Configuration**: zet *Site URL* op het adres van de app (bijv. `https://planning.jouwdomein.nl`), zodat de bevestigingsmail daarheen linkt.
+   Optioneel: **Authentication → Sign In / Providers → Email** → *Confirm email* uit, dan kun je direct na aanmaken inloggen.
+4. **Project Settings → API**: kopieer de *Project URL* en de *anon / publishable key* naar `.env.local` (zie `.env.example`).
+5. `npm run build` en upload `dist/` opnieuw.
+
+### In de app
+
+1. Glenn: **Meer → Inloggen of account maken** → *Nieuw account*, daarna **Nieuw huishouden starten** (kies "Glenn"). Je krijgt een uitnodigingscode.
+2. Jessica: account maken → **Deelnemen met een code** → code invullen, "Jessica" kiezen, *Vervangen* (aanbevolen).
+3. Op een extra apparaat met hetzelfde account kies je **Gedeelde planning gebruiken**.
+
+### Hoe het werkt
+
+- `src/sync/syncEngine.ts` – outbox (wachtrij) → push, daarna pull vanaf een cursor; triggers: wijziging, Realtime, online komen, app openen, elke minuut.
+- `src/sync/supabaseRemote.ts` – vertaling naar de Supabase-tabellen; `src/sync/SyncContext.tsx` – inloggen, huishouden, koppelen.
+- Verwijderen gebeurt als *tombstone* (`deleted_at`), zodat het ook op het andere toestel verdwijnt; *last write wins* wordt in de database afgedwongen.
+- Getest met een echte Postgres + PostgREST (RLS, codes, conflicten) en met `src/sync/syncEngine.test.ts` (twee toestellen, offline, undo).
+
+Let op: een gratis Supabase-project wordt gepauzeerd na een week zonder gebruik; in de app kun je dan gewoon doorwerken, en na het hervatten in het Supabase-dashboard synchroniseert alles weer.
+
 ## Live zetten op Cloud86 (of andere Apache-hosting)
 
 1. `npm run build`
@@ -101,11 +129,10 @@ Zonder configuratie gebruikt de app de lokale parser. Met AI:
 
 `npm run dev` serveert `/api/parse` lokaal met dezelfde handler; op Vercel draait `api/parse.ts`. De sleutel komt nooit in de browser. Het antwoord van het model wordt gevalideerd (`sanitizeActions`) en bij een fout, timeout of offline valt de app terug op de lokale parser. Server-side fallbacks bij een weigering staan aan (`fallbacks: "default"`).
 
-### Later: Supabase / twee personen
+### Datamodel
 
-- Schrijf een `SupabaseRepository implements PlannerRepository` en wissel die in `state/DataContext.tsx`. Roep de `subscribe`-listeners aan bij realtime-wijzigingen.
-- Alle entiteiten hebben `id`, `createdAt`, `updatedAt` en (activiteiten/maaltijden) `assignedTo: 'glenn' | 'jessica' | 'samen'`; de huishoudleden staan in `config/household.ts`.
-- Maaltijden hebben al `ingredients[]` en boodschappen een `sourceMealId`.
+- Alle entiteiten hebben `id` (UUID), `createdAt`, `updatedAt` en (activiteiten/maaltijden) `assignedTo: 'glenn' | 'jessica' | 'samen'`; de huishoudleden staan in `config/household.ts`.
+- Maaltijden hebben `ingredients[]` en boodschappen een `sourceMealId`.
 
 ## PWA-details
 

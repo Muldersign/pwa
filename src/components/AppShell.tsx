@@ -4,6 +4,7 @@ import type { ISODate } from '../domain/types';
 import { formatLongDate, capitalize } from '../lib/dates';
 import { useOnline } from '../lib/useOnline';
 import { useData } from '../state/DataContext';
+import { useSync } from '../sync/SyncContext';
 import { tabOf, type Route } from '../state/router';
 import { UIContext, type ConfirmRequest, type EditorRequest, type UIActions } from '../state/UIContext';
 import { ItemEditorSheet } from './ItemEditorSheet';
@@ -50,6 +51,7 @@ function useVisualViewportVars() {
 export function AppShell({ route, navigate, autoOpenInput, children }: Props) {
   const { groceries } = useData();
   const online = useOnline();
+  const sync = useSync();
   const [smartOpen, setSmartOpen] = useState(false);
   const [prefill, setPrefill] = useState<string | undefined>();
   const [editor, setEditor] = useState<EditorRequest | null>(null);
@@ -111,7 +113,10 @@ export function AppShell({ route, navigate, autoOpenInput, children }: Props) {
         <main className="main" id="main">
           {!online && (
             <div className="offline-banner" role="status">
-              <CloudOff size={14} /> Offline — alles blijft gewoon werken en wordt lokaal bewaard
+              <CloudOff size={14} />
+              {sync.linked
+                ? 'Offline — wijzigingen worden verstuurd zodra je weer online bent'
+                : 'Offline — alles blijft gewoon werken en wordt lokaal bewaard'}
             </div>
           )}
           {children}

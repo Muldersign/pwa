@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { IndexedDbRepository } from '../storage/indexedDbRepository';
+import { localRepository } from '../storage/instance';
 import type { PlannerRepository, PlannerSnapshot } from '../storage/repository';
 import { seedIfFirstRun } from '../storage/seed';
 
@@ -14,8 +14,8 @@ const EMPTY: PlannerSnapshot = { activities: [], meals: [], groceries: [], notes
 
 const DataContext = createContext<DataState | null>(null);
 
-/** Single repository instance for the app. Swap here for a Supabase implementation later. */
-const repository: PlannerRepository = new IndexedDbRepository();
+/** Local-first store; Supabase sync runs alongside it (see sync/SyncContext). */
+const repository: PlannerRepository = localRepository;
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<PlannerSnapshot>(EMPTY);
