@@ -58,6 +58,15 @@ De app opent dan fullscreen (standalone), houdt rekening met de notch/home-indic
 - `aanstaande dinsdag` → eerstvolgende dinsdag na vandaag, zonder vraag
 - ook: vandaag, vanavond, morgen(avond), overmorgen, dit weekend, over 2 weken, 13 oktober, 13-10, half 8, kwart over 7, van 9 tot 5
 
+## Live zetten op Cloud86 (of andere Apache-hosting)
+
+1. `npm run build`
+2. Upload de **inhoud** van `dist/` (inclusief het verborgen bestand `.htaccess`) naar de webmap van je (sub)domein, bijv. `public_html/` of `domains/<domein>/public_html/`.
+3. Zet SSL (Let's Encrypt) aan voor het domein; `.htaccess` stuurt alles door naar https.
+4. Open de site op je telefoon en kies *Zet op beginscherm*.
+
+Bij een update: opnieuw bouwen en de bestanden overschrijven; de app ververst zichzelf. Je data blijft op het toestel staan.
+
 ## Architectuur
 
 ```
