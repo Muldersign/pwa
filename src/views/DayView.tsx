@@ -1,6 +1,7 @@
 import { addDays, format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { CalendarPlus, ChevronLeft, ChevronRight, MapPin, Plus, ShoppingBasket, Utensils } from 'lucide-react';
+import { CalendarPlus, ChevronLeft, ChevronRight, MapPin, Plus, ShoppingBasket, Users, Utensils } from 'lucide-react';
+import { listStats } from '../lib/listStatus';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CategoryIcon } from '../components/CategoryIcon';
 import { DayTimeline } from '../components/DayTimeline';
@@ -27,7 +28,8 @@ interface Props {
 }
 
 export function DayView({ date, canGoBack, navigate }: Props) {
-  const { activities, meals, notes, repo } = useData();
+  const { activities, meals, notes, repo, lists, listItems } = useData();
+  const dayLists = lists.filter((l) => l.date === date && !l.archived);
   const ui = useUI();
   const toast = useToast();
   const now = useNow();
@@ -185,6 +187,31 @@ export function DayView({ date, canGoBack, navigate }: Props) {
           )}
           {activityEntries.length > 0 && <p className="hint">Tip: veeg een item naar links om te wijzigen of te verwijderen.</p>}
         </section>
+
+        {dayLists.length > 0 && (
+          <section className="card card--quiet">
+            <div className="card__header">
+              <h2 className="card__title">Lijstjes</h2>
+            </div>
+            {dayLists.map((l) => {
+              const stats = listStats(listItems.filter((i) => i.listId === l.id));
+              return (
+                <button key={l.id} type="button" className="day-list-link" onClick={() => navigate({ name: 'list', id: l.id })}>
+                  <span className="list-card__icon">
+                    <Users size={18} />
+                  </span>
+                  <span className="day-list-link__body">
+                    <strong>{l.title}</strong>
+                    <small>
+                      {stats.yes} komen · {stats.pending} nog geen reactie
+                    </small>
+                  </span>
+                  <ChevronRight size={18} className="text-soft" />
+                </button>
+              );
+            })}
+          </section>
+        )}
 
         <NoteCard key={date} date={date} saved={savedNote} />
       </div>

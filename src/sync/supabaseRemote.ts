@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Activity, DayNote, GroceryItem, Meal } from '../domain/types';
+import type { Activity, DayNote, GroceryItem, ListItem, Meal, PlannerList } from '../domain/types';
 import { isUuid } from '../lib/id';
 import type { RemoteRow, RemoteStore, SyncRecord, SyncTable } from './types';
 
@@ -10,6 +10,8 @@ const SERVER_TABLE: Record<SyncTable, string> = {
   meals: 'meals',
   groceries: 'grocery_items',
   notes: 'day_notes',
+  lists: 'lists',
+  listItems: 'list_items',
 };
 
 const iso = (v: unknown): string => new Date(String(v)).toISOString();
@@ -48,6 +50,20 @@ function toRow(table: SyncTable, r: SyncRecord, householdId: string): Row {
       const n = r as DayNote;
       return { ...base, date: n.date, text: n.text };
     }
+    case 'lists': {
+      const l = r as PlannerList;
+      return {
+        ...base, id: l.id, title: l.title, date: l.date ?? null, time: l.time ?? null, location: l.location ?? null,
+        notes: l.notes ?? null, archived: l.archived ?? false, created_at: l.createdAt,
+      };
+    }
+    case 'listItems': {
+      const i = r as ListItem;
+      return {
+        ...base, id: i.id, list_id: i.listId, name: i.name, status: i.status, count: i.count ?? null, note: i.note ?? null,
+        position: i.position, created_at: i.createdAt,
+      };
+    }
   }
 }
 
@@ -80,6 +96,18 @@ function fromRow(table: SyncTable, row: Row): SyncRecord {
       };
     case 'notes':
       return { date: String(row.date), text: String(row.text ?? ''), updatedAt };
+    case 'lists':
+      return {
+        id: String(row.id), title: String(row.title), date: opt(row.date as string), time: opt(row.time as string),
+        location: opt(row.location as string), notes: opt(row.notes as string), archived: Boolean(row.archived),
+        createdAt: iso(row.created_at), updatedAt,
+      };
+    case 'listItems':
+      return {
+        id: String(row.id), listId: String(row.list_id), name: String(row.name), status: row.status as ListItem['status'],
+        count: row.count === null || row.count === undefined ? undefined : Number(row.count), note: opt(row.note as string),
+        position: Number(row.position ?? 0), createdAt: iso(row.created_at), updatedAt,
+      };
   }
 }
 

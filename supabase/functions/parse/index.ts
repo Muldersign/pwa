@@ -12,7 +12,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.131.0';
 
 const MODEL = 'claude-opus-5-5';
 /** Shown in every error, so it is easy to see which deployment answered. */
-const FUNCTION_VERSION = 'v3';
+const FUNCTION_VERSION = 'v4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,14 +38,14 @@ const OUTPUT_SCHEMA = {
         additionalProperties: false,
         required: [
           'type', 'date', 'title', 'time', 'endTime', 'location', 'category', 'mealType', 'name', 'quantity', 'unit',
-          'newTitle', 'newDate', 'newTime', 'newLocation', 'assignedTo',
+          'newTitle', 'newDate', 'newTime', 'newLocation', 'assignedTo', 'status', 'listTitle',
         ],
         properties: {
           type: {
             type: 'string',
             enum: [
               'ADD_ACTIVITY', 'ADD_MEAL', 'ADD_GROCERY', 'DELETE_ACTIVITY', 'DELETE_MEAL', 'DELETE_GROCERY',
-              'UPDATE_ACTIVITY', 'UPDATE_MEAL', 'MOVE_ACTIVITY', 'MOVE_MEAL',
+              'UPDATE_ACTIVITY', 'UPDATE_MEAL', 'MOVE_ACTIVITY', 'MOVE_MEAL', 'SET_LIST_STATUS',
             ],
           },
           date: nullableString,
@@ -63,6 +63,8 @@ const OUTPUT_SCHEMA = {
           newTime: nullableString,
           newLocation: nullableString,
           assignedTo: nullableEnum(['glenn', 'jessica', 'samen']),
+          status: nullableEnum(['yes', 'maybe', 'no', 'pending']),
+          listTitle: nullableString,
         },
       },
     },
@@ -82,6 +84,7 @@ Actietypes:
 - UPDATE_MEAL: title + date van de bestaande maaltijd (title mag null zijn = "het avondeten van die dag"), newTitle
 - MOVE_ACTIVITY: title + date van het bestaande item, newDate en/of newTime
 - MOVE_MEAL: title + date, newDate
+- SET_LIST_STATUS: reactie op een gastenlijst. name = de persoon (precies zoals op de lijst), status = yes (komt) / no (komt niet, afgezegd) / maybe (misschien, twijfelt) / pending (nog geen reactie), listTitle = de titel van de lijst
 
 Regels:
 - Eén zin kan meerdere opdrachten bevatten: geef voor elke opdracht een aparte actie, in de volgorde van de zin.
@@ -99,6 +102,8 @@ Regels:
 - Boodschappen: elk product apart, naam met hoofdletter, enkelvoud/meervoud zoals gezegd. "chinees halen" is eten (ADD_MEAL), geen boodschap.
 - Bij verwijderen, verplaatsen of wijzigen: gebruik als title EXACT de titel uit de lijst met bestaande items als die er staat, met de datum van dat item.
   "vrijdag geen training" → DELETE_ACTIVITY van de training op vrijdag. "we eten donderdag toch geen pasta maar wraps" → UPDATE_MEAL title "Pasta", newTitle "Wraps".
+- Lijstjes: "Jan komt niet", "Oma en Gerard komen", "Bryan komt naar bier", "Sanne heeft afgezegd" → één SET_LIST_STATUS per persoon.
+  Kies de lijst uit de bestaande lijsten. Staat iemand op meerdere lijsten en is niet duidelijk welke, gebruik dan de lijst die genoemd wordt of anders de eerstvolgende; noem nooit een lijst die niet bestaat. Gebruik de naam exact zoals op de lijst (ook accenten, bijv. "Daniël").
 - "Jessica moet …" → assignedTo "jessica"; "Glenn …" → "glenn"; "samen …" → "samen". Anders null.
 - Velden die niet van toepassing zijn: null.
 - Geef alleen acties die de gebruiker echt vraagt. Is de zin geen opdracht voor de planner, geef dan een lege lijst.`;

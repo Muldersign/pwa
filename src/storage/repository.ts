@@ -3,10 +3,14 @@ import type {
   DayNote,
   GroceryItem,
   ISODate,
+  ListItem,
   Meal,
   NewActivity,
   NewGroceryItem,
+  NewListItem,
   NewMeal,
+  NewPlannerList,
+  PlannerList,
 } from '../domain/types';
 
 export interface PlannerSnapshot {
@@ -14,7 +18,11 @@ export interface PlannerSnapshot {
   meals: Meal[];
   groceries: GroceryItem[];
   notes: DayNote[];
+  lists: PlannerList[];
+  listItems: ListItem[];
 }
+
+export const EMPTY_SNAPSHOT: PlannerSnapshot = { activities: [], meals: [], groceries: [], notes: [], lists: [], listItems: [] };
 
 /**
  * Storage-agnostic contract for all planner data.
@@ -46,6 +54,17 @@ export interface PlannerRepository {
   clearCompletedGroceries(): Promise<GroceryItem[]>;
 
   setNote(date: ISODate, text: string): Promise<void>;
+
+  addList(input: NewPlannerList): Promise<PlannerList>;
+  updateList(id: string, patch: Partial<NewPlannerList>): Promise<void>;
+  /** Deletes the list and all its items. Returns what was removed (for undo). */
+  deleteList(id: string): Promise<{ list: PlannerList; items: ListItem[] } | undefined>;
+  putList(list: PlannerList): Promise<void>;
+
+  addListItem(input: NewListItem): Promise<ListItem>;
+  updateListItem(id: string, patch: Partial<NewListItem>): Promise<void>;
+  deleteListItem(id: string): Promise<void>;
+  putListItem(item: ListItem): Promise<void>;
 
   replaceAll(snapshot: PlannerSnapshot): Promise<void>;
   getMeta<T>(key: string): Promise<T | undefined>;

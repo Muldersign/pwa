@@ -71,7 +71,12 @@ export function MoreView() {
         destructive: true,
       });
       if (!ok) return;
-      await repo.replaceAll({ ...d, notes: Array.isArray(d.notes) ? d.notes : [] });
+      await repo.replaceAll({
+        ...d,
+        notes: Array.isArray(d.notes) ? d.notes : [],
+        lists: Array.isArray(d.lists) ? d.lists : [],
+        listItems: Array.isArray(d.listItems) ? d.listItems : [],
+      });
       toast({ message: 'Back-up teruggezet' });
     } catch {
       toast({ message: 'Dit bestand is geen geldige back-up', tone: 'error' });

@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarRange, Ellipsis, Plus, ShoppingBasket, Sparkles, type LucideIcon } from 'lucide-react';
+import { CalendarDays, CalendarRange, ClipboardList, Ellipsis, Plus, ShoppingBasket, Sparkles, type LucideIcon } from 'lucide-react';
 import type { Route, TabName } from '../state/router';
 
 interface NavProps {
@@ -12,6 +12,7 @@ const TABS: { name: TabName; label: string; icon: LucideIcon; route: Route }[] =
   { name: 'today', label: 'Vandaag', icon: CalendarDays, route: { name: 'today' } },
   { name: 'week', label: 'Week', icon: CalendarRange, route: { name: 'week' } },
   { name: 'groceries', label: 'Boodschappen', icon: ShoppingBasket, route: { name: 'groceries' } },
+  { name: 'lists', label: 'Lijstjes', icon: ClipboardList, route: { name: 'lists' } },
   { name: 'more', label: 'Meer', icon: Ellipsis, route: { name: 'more' } },
 ];
 
@@ -45,7 +46,7 @@ export function BottomNavigation({ active, onNavigate, onAdd, groceryCount }: Na
         </button>
       </div>
       <TabButton tab={TABS[2]} active={active === 'groceries'} onNavigate={onNavigate} badge={groceryCount} />
-      <TabButton tab={TABS[3]} active={active === 'more'} onNavigate={onNavigate} />
+      <TabButton tab={TABS[3]} active={active === 'lists'} onNavigate={onNavigate} />
     </nav>
   );
 }

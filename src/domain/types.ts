@@ -82,3 +82,33 @@ export type NewMeal = Omit<Meal, 'id' | 'createdAt' | 'updatedAt'>;
 export type NewGroceryItem = Omit<GroceryItem, 'id' | 'createdAt' | 'updatedAt' | 'completed'> & {
   completed?: boolean;
 };
+
+/* ------------------------------- Lijstjes ------------------------------- */
+
+/** Response of a person on a guest list. */
+export type ListItemStatus = 'pending' | 'yes' | 'maybe' | 'no';
+
+export interface PlannerList extends BaseEntity {
+  title: string;
+  /** Optional event this list belongs to (e.g. a birthday party). */
+  date?: ISODate;
+  time?: ClockTime;
+  location?: string;
+  notes?: string;
+  /** Lists are archived instead of deleted once the event is over. */
+  archived?: boolean;
+}
+
+export interface ListItem extends BaseEntity {
+  listId: string;
+  name: string;
+  status: ListItemStatus;
+  /** Number of people this entry stands for (partner, kids). Defaults to 1. */
+  count?: number;
+  note?: string;
+  /** Sort order within the list. */
+  position: number;
+}
+
+export type NewPlannerList = Omit<PlannerList, 'id' | 'createdAt' | 'updatedAt'>;
+export type NewListItem = Omit<ListItem, 'id' | 'createdAt' | 'updatedAt'>;

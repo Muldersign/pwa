@@ -1,6 +1,18 @@
-import type { Activity, GroceryItem, ISODate, Meal, NewActivity, NewGroceryItem, NewMeal } from '../domain/types';
+import type {
+  Activity,
+  GroceryItem,
+  ISODate,
+  ListItem,
+  Meal,
+  NewActivity,
+  NewGroceryItem,
+  NewListItem,
+  NewMeal,
+  NewPlannerList,
+  PlannerList,
+} from '../domain/types';
 import { createId } from '../lib/id';
-import type { PlannerRepository, PlannerSnapshot } from './repository';
+import { EMPTY_SNAPSHOT, type PlannerRepository, type PlannerSnapshot } from './repository';
 
 const now = () => new Date().toISOString();
 const clone = <T,>(v: T): T => structuredClone(v);
@@ -10,7 +22,7 @@ const clone = <T,>(v: T): T => structuredClone(v);
  * simplest reference for writing another backend (e.g. Supabase).
  */
 export class MemoryRepository implements PlannerRepository {
-  private data: PlannerSnapshot = { activities: [], meals: [], groceries: [], notes: [] };
+  private data: PlannerSnapshot = clone(EMPTY_SNAPSHOT);
   private meta = new Map<string, unknown>();
   private listeners = new Set<() => void>();
 
@@ -98,8 +110,50 @@ export class MemoryRepository implements PlannerRepository {
     this.changed();
   }
 
+  async addList(input: NewPlannerList): Promise<PlannerList> {
+    const item: PlannerList = { ...input, id: createId(), createdAt: now(), updatedAt: now() };
+    this.data.lists.push(item);
+    this.changed();
+    return clone(item);
+  }
+  async updateList(id: string, patch: Partial<NewPlannerList>) {
+    this.data.lists = this.data.lists.map((l) => (l.id === id ? { ...l, ...patch, updatedAt: now() } : l));
+    this.changed();
+  }
+  async deleteList(id: string) {
+    const list = this.data.lists.find((l) => l.id === id);
+    if (!list) return undefined;
+    const items = this.data.listItems.filter((i) => i.listId === id);
+    this.data.lists = this.data.lists.filter((l) => l.id !== id);
+    this.data.listItems = this.data.listItems.filter((i) => i.listId !== id);
+    this.changed();
+    return clone({ list, items });
+  }
+  async putList(list: PlannerList) {
+    this.data.lists = [...this.data.lists.filter((l) => l.id !== list.id), clone(list)];
+    this.changed();
+  }
+  async addListItem(input: NewListItem): Promise<ListItem> {
+    const item: ListItem = { ...input, id: createId(), createdAt: now(), updatedAt: now() };
+    this.data.listItems.push(item);
+    this.changed();
+    return clone(item);
+  }
+  async updateListItem(id: string, patch: Partial<NewListItem>) {
+    this.data.listItems = this.data.listItems.map((i) => (i.id === id ? { ...i, ...patch, updatedAt: now() } : i));
+    this.changed();
+  }
+  async deleteListItem(id: string) {
+    this.data.listItems = this.data.listItems.filter((i) => i.id !== id);
+    this.changed();
+  }
+  async putListItem(item: ListItem) {
+    this.data.listItems = [...this.data.listItems.filter((i) => i.id !== item.id), clone(item)];
+    this.changed();
+  }
+
   async replaceAll(snapshot: PlannerSnapshot) {
-    this.data = clone(snapshot);
+    this.data = clone({ ...EMPTY_SNAPSHOT, ...snapshot });
     this.changed();
   }
   async getMeta<T>(key: string) {

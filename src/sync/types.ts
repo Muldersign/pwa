@@ -1,15 +1,17 @@
-import type { Activity, DayNote, GroceryItem, Meal } from '../domain/types';
+import type { Activity, DayNote, GroceryItem, ListItem, Meal, PlannerList } from '../domain/types';
 
 /** Local table names that take part in synchronisation. */
-export type SyncTable = 'activities' | 'meals' | 'groceries' | 'notes';
+export type SyncTable = 'activities' | 'meals' | 'groceries' | 'notes' | 'lists' | 'listItems';
 
-export const SYNC_TABLES: SyncTable[] = ['activities', 'meals', 'groceries', 'notes'];
+export const SYNC_TABLES: SyncTable[] = ['activities', 'meals', 'groceries', 'notes', 'lists', 'listItems'];
 
 export interface SyncRecordMap {
   activities: Activity;
   meals: Meal;
   groceries: GroceryItem;
   notes: DayNote;
+  lists: PlannerList;
+  listItems: ListItem;
 }
 
 export type SyncRecord = SyncRecordMap[SyncTable];

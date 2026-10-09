@@ -1,5 +1,5 @@
 import type { PlannerAction } from '../domain/actions';
-import type { Activity, GroceryItem, ISODate, Meal } from '../domain/types';
+import type { Activity, GroceryItem, ISODate, ListItem, Meal, PlannerList } from '../domain/types';
 import { capitalize, todayISO } from '../lib/dates';
 import type { PlannerRepository, PlannerSnapshot } from '../storage/repository';
 import { categorizeGrocery, productKey } from './groceryCategorizer';
@@ -12,7 +12,8 @@ export type Change =
   | { kind: ChangeKind; entity: 'activity'; item: Activity; before?: Activity }
   | { kind: ChangeKind; entity: 'meal'; item: Meal; before?: Meal }
   | { kind: ChangeKind; entity: 'grocery'; item: GroceryItem; before?: GroceryItem }
-  | { kind: 'notFound'; entity: 'unknown'; query: string; date?: ISODate };
+  | { kind: ChangeKind; entity: 'listItem'; item: ListItem; list: PlannerList; before?: ListItem }
+  | { kind: 'notFound'; entity: 'unknown'; query: string; date?: ISODate; message?: string };
 
 export interface ExecutionResult {
   changes: Change[];
@@ -242,6 +243,13 @@ export async function executeActions(repo: PlannerRepository, actions: PlannerAc
         }
         break;
       }
+
+      case 'SET_LIST_STATUS': {
+        const result = await setListStatus(repo, state, action.name, action.status, action.listTitle);
+        changes.push(result.change);
+        if (result.undo) undoOps.push(result.undo);
+        break;
+      }
     }
   }
 
@@ -251,6 +259,85 @@ export async function executeActions(repo: PlannerRepository, actions: PlannerAc
       for (const op of undoOps.reverse()) await op();
     },
   };
+}
+
+/* --------------------------------- lijstjes --------------------------------- */
+
+/** Normalized person name for matching: "Daniël" ~ "daniel", ignores "?" and spacing. */
+export function personKey(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function listMatches(list: PlannerList, hint: string): boolean {
+  const a = personKey(list.title);
+  const b = personKey(hint);
+  return !!b && (a === b || a.includes(b) || b.includes(a));
+}
+
+/** Upcoming, non-archived lists first; then the rest. */
+function rankLists(lists: PlannerList[]): PlannerList[] {
+  const today = todayISO();
+  const score = (l: PlannerList) => (l.archived ? 2 : l.date && l.date < today ? 1 : 0);
+  return [...lists].sort((x, y) => score(x) - score(y) || (x.date ?? '9999').localeCompare(y.date ?? '9999'));
+}
+
+async function setListStatus(
+  repo: PlannerRepository,
+  state: PlannerSnapshot,
+  name: string,
+  status: ListItem['status'],
+  listHint?: string,
+): Promise<{ change: Change; undo?: () => Promise<void> }> {
+  const key = personKey(name);
+  const lists = rankLists(state.lists);
+  const candidateLists = listHint ? lists.filter((l) => listMatches(l, listHint)) : lists;
+  if (listHint && !candidateLists.length) {
+    return { change: { kind: 'notFound', entity: 'unknown', query: listHint, message: `Ik kon geen lijst “${listHint}” vinden.` } };
+  }
+
+  const matches = state.listItems
+    .filter((i) => candidateLists.some((l) => l.id === i.listId))
+    .filter((i) => personKey(i.name) === key || personKey(i.name).split(' ')[0] === key);
+
+  if (!matches.length) {
+    // A named list but an unknown person: add them to that list.
+    if (listHint && candidateLists.length === 1) {
+      const list = candidateLists[0];
+      const position = Math.max(-1, ...state.listItems.filter((i) => i.listId === list.id).map((i) => i.position)) + 1;
+      const created = await repo.addListItem({ listId: list.id, name: capitalize(name.trim()), status, position });
+      state.listItems.push(created);
+      return { change: { kind: 'added', entity: 'listItem', item: created, list }, undo: () => repo.deleteListItem(created.id) };
+    }
+    return { change: { kind: 'notFound', entity: 'unknown', query: name, message: `${capitalize(name)} staat op geen enkele lijst.` } };
+  }
+
+  // The same person on several lists without a hint: only the upcoming one when that is clear.
+  const listIds = [...new Set(matches.map((m) => m.listId))];
+  if (listIds.length > 1) {
+    const titles = listIds.map((id) => lists.find((l) => l.id === id)!.title);
+    return {
+      change: {
+        kind: 'notFound',
+        entity: 'unknown',
+        query: name,
+        message: `${capitalize(name)} staat op meerdere lijsten (${titles.join(', ')}). Zeg bijvoorbeeld “${capitalize(name)} komt naar ${titles[0]}”.`,
+      },
+    };
+  }
+
+  const item = matches[0];
+  const list = lists.find((l) => l.id === item.listId)!;
+  const before = { ...item };
+  await repo.updateListItem(item.id, { status });
+  const after: ListItem = { ...item, status, updatedAt: new Date().toISOString() };
+  Object.assign(item, after);
+  return { change: { kind: 'updated', entity: 'listItem', item: after, list, before }, undo: () => repo.putListItem(before) };
 }
 
 /* -------------------------------- grocery helpers -------------------------------- */

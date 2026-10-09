@@ -1,6 +1,6 @@
 import type { ParseResult, PlannerAction } from '../../domain/actions';
 import { HOUSEHOLD } from '../../config/household';
-import type { Assignee, ISODate, MealType } from '../../domain/types';
+import type { Assignee, ISODate, ListItem, MealType } from '../../domain/types';
 import { capitalize, formatLongDate } from '../../lib/dates';
 import {
   ABSORB_LOCATION_TITLES,
@@ -493,9 +493,104 @@ function replaceDate(actions: PlannerAction[], from: ISODate, to: ISODate): Plan
  * Rule-based Dutch parser. Works fully offline and handles the common phrasing
  * for planning, meals and groceries, including several commands in one sentence.
  */
-export function parseLocally(input: string, now: Date = new Date()): ParseResult {
+/** What the parser may know about guest lists, to recognize "Jan komt niet". */
+export interface ListKnowledge {
+  listTitles: string[];
+  personNames: string[];
+}
+
+const nameKey = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 ]/g, '')
+    .trim();
+
+/**
+ * RSVP sentences: "Jan komt niet", "Oma en Gerard komen", "Stefan komt misschien
+ * naar bier", "Bart heeft afgezegd", "Sanne kan niet". Only used for names that
+ * are on a list (or with a list name), so agenda sentences are never misread.
+ */
+function parseRsvp(sentence: string, known?: ListKnowledge): PlannerAction[] | undefined {
+  if (!known || !known.personNames.length) return undefined;
+  const m =
+    /^(.+?)\s+(komt|komen|kan|kunnen|heeft|hebben|is|zijn|twijfelt|twijfelen)\b(.*)$/i.exec(sentence.replace(/[.!]+$/, ''));
+  if (!m) return undefined;
+  const [, who, verb, restRaw] = m;
+  let rest = restRaw.trim().toLowerCase();
+  const v = verb.toLowerCase();
+
+  // Optional list: "... naar/voor/op/bij (de/het) <lijst>"
+  let listTitle: string | undefined;
+  const hint = /\b(?:naar|voor|op|bij)\s+(?:de\s+|het\s+|mijn\s+)?([a-zà-ÿ' -]{2,40})$/i.exec(rest);
+  if (hint) {
+    listTitle = hint[1].trim();
+    rest = rest.slice(0, hint.index).trim();
+  }
+  const words = rest.split(/\s+/).filter(Boolean);
+  const allowed = new Set(['wel', 'niet', 'misschien', 'toch', 'ook', 'komen', 'afgezegd', 'afgemeld', 'aangemeld', 'erbij', 'er', 'nog', 'zeker', 'geen', 'tijd']);
+  if (words.some((w) => !allowed.has(w))) return undefined;
+
+  let status: ListItem['status'];
+  if (v.startsWith('twijfel') || words.includes('misschien')) status = 'maybe';
+  else if (words.includes('niet') || words.includes('afgezegd') || words.includes('afgemeld') || words.includes('geen')) status = 'no';
+  else if ((v === 'kan' || v === 'kunnen' || v === 'heeft' || v === 'hebben' || v === 'is' || v === 'zijn') && !words.includes('aangemeld') && !words.includes('erbij') && !words.includes('wel')) return undefined;
+  else status = 'yes';
+
+  const names = who
+    .split(/\s*,\s*|\s+en\s+|\s*&\s*/i)
+    .map((n) => n.trim())
+    .filter(Boolean);
+  if (!names.length || names.length > 12 || names.some((n) => /\d/.test(n) || n.split(' ').length > 3)) return undefined;
+
+  const knownNames = new Set(known.personNames.map(nameKey));
+  const knownFirst = new Set(known.personNames.map((n) => nameKey(n).split(' ')[0]));
+  const listKnown = listTitle && known.listTitles.some((t) => nameKey(t).includes(nameKey(listTitle!)) || nameKey(listTitle!).includes(nameKey(t)));
+  const anyKnown = names.some((n) => knownNames.has(nameKey(n)) || knownFirst.has(nameKey(n)));
+  if (!anyKnown && !listKnown) return undefined;
+  if (listTitle && !listKnown) return undefined;
+
+  return names.map((name) => ({ type: 'SET_LIST_STATUS' as const, name: capitalize(name), status, listTitle: listKnown ? listTitle : undefined }));
+}
+
+/** "Jan komt niet en Noor komt", "Jan komt niet, Noor twijfelt": several RSVPs in one sentence. */
+function parseRsvpSentence(sentence: string, known?: ListKnowledge): PlannerAction[] | undefined {
+  const whole = parseRsvp(sentence, known);
+  if (whole) return whole;
+  // Split on commas first; a part that still fails is split on "en" before a new subject.
+  const parts = sentence.split(/\s*[,;]\s*/).map((p) => p.trim()).filter(Boolean);
+  const out: PlannerAction[] = [];
+  let pieces = 0;
+  for (const part of parts) {
+    const direct = parseRsvp(part, known);
+    if (direct) {
+      out.push(...direct);
+      pieces++;
+      continue;
+    }
+    const sub = part
+      .split(/\s+en\s+(?=\S+(?:\s+\S+)?\s+(?:komt|kan|heeft|is|twijfelt)\b)/i)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (sub.length < 2) return undefined;
+    for (const piece of sub) {
+      const r = parseRsvp(piece, known);
+      if (!r) return undefined;
+      out.push(...r);
+      pieces++;
+    }
+  }
+  if (pieces < 2) return undefined;
+  return out;
+}
+
+export function parseLocally(input: string, now: Date = new Date(), known?: ListKnowledge): ParseResult {
   const sentence = normalizeSentence(input);
   if (!sentence) return { actions: [], source: 'local' };
+
+  const rsvp = parseRsvpSentence(sentence, known);
+  if (rsvp) return { actions: rsvp, source: 'local' };
 
   const ctx: ClauseContext = {};
   const actions: PlannerAction[] = [];

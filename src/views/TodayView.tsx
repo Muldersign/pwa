@@ -1,5 +1,5 @@
 import { addDays } from 'date-fns';
-import { ChevronRight, Plus, ShoppingBasket, Sparkles, Sun, Utensils } from 'lucide-react';
+import { ChevronRight, Plus, Settings, ShoppingBasket, Sparkles, Sun, Utensils } from 'lucide-react';
 import { useMemo } from 'react';
 import { DayTimeline } from '../components/DayTimeline';
 import { EmptyState } from '../components/EmptyState';
@@ -41,9 +41,14 @@ export function TodayView({ navigate }: { navigate: (r: Route) => void }) {
 
   return (
     <div className="page page--today">
-      <header className="page-header">
-        <p className="page-header__eyebrow">{greeting(now)} 👋</p>
-        <h1 className="page-header__title">{capitalize(formatLongDate(now))}</h1>
+      <header className="page-header page-header--row">
+        <div>
+          <p className="page-header__eyebrow">{greeting(now)} 👋</p>
+          <h1 className="page-header__title">{capitalize(formatLongDate(now))}</h1>
+        </div>
+        <button type="button" className="icon-button icon-button--soft mobile-only" aria-label="Meer en instellingen" onClick={() => navigate({ name: 'more' })}>
+          <Settings size={18} />
+        </button>
       </header>
 
       <div className="today-grid">

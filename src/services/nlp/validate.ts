@@ -95,6 +95,14 @@ export function sanitizeActions(input: unknown): PlannerAction[] {
         if (title) action = { type, title, date: date(a.date), newDate: date(a.newDate), newTime: time(a.newTime) };
         break;
       }
+      case 'SET_LIST_STATUS': {
+        const name = str(a.name);
+        const status = str(a.status);
+        if (name && status && ['pending', 'yes', 'maybe', 'no'].includes(status)) {
+          action = { type, name, status: status as never, listTitle: str(a.listTitle) ?? str(a.title) };
+        }
+        break;
+      }
       case 'MOVE_MEAL': {
         const title = str(a.title);
         const newDate = date(a.newDate);

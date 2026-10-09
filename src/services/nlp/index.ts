@@ -88,6 +88,13 @@ export function buildParseContext(data: PlannerSnapshot, now: Date): string {
   }
   const groceries = data.groceries.filter((g) => !g.completed).map((g) => g.name);
   if (groceries.length) lines.push(`boodschappenlijst: ${groceries.join(', ')}`);
+  for (const l of data.lists.filter((x) => !x.archived)) {
+    const people = data.listItems
+      .filter((i) => i.listId === l.id)
+      .sort((a, b) => a.position - b.position)
+      .map((i) => `${i.name} (${i.status})`);
+    lines.push(`lijst "${l.title}"${l.date ? ` (${l.date}${l.time ? ` ${l.time}` : ''})` : ''}: ${people.join(', ')}`);
+  }
   return lines.slice(0, 200).join('\n');
 }
 
@@ -118,5 +125,8 @@ export async function parseNaturalLanguageCommand(input: string, options: ParseO
       aiError = e instanceof Error ? e.message : String(e);
     }
   }
-  return { ...parseLocally(input, now), aiError };
+  const known = options.data
+    ? { listTitles: options.data.lists.map((l) => l.title), personNames: options.data.listItems.map((i) => i.name) }
+    : undefined;
+  return { ...parseLocally(input, now, known), aiError };
 }

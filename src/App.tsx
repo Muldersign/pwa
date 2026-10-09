@@ -6,6 +6,7 @@ import { SyncProvider } from './sync/SyncContext';
 import { tabOf, useHashRouter, type Route } from './state/router';
 import { DayView } from './views/DayView';
 import { GroceryView } from './views/GroceryView';
+import { ListDetailView, ListsView } from './views/ListsView';
 import { MoreView } from './views/MoreView';
 import { TodayView } from './views/TodayView';
 import { WeekView } from './views/WeekView';
@@ -23,7 +24,7 @@ function Screens() {
   }
 
   // Scroll to top when switching tabs or days (not when changing week).
-  const scrollKey = route.name === 'day' ? `day-${route.date}` : tabOf(route);
+  const scrollKey = route.name === 'day' ? `day-${route.date}` : route.name === 'list' ? `list-${route.id}` : tabOf(route);
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [scrollKey]);
@@ -56,6 +57,12 @@ function Screens() {
       case 'groceries':
         screen = <GroceryView />;
         break;
+      case 'lists':
+        screen = <ListsView navigate={navigate} />;
+        break;
+      case 'list':
+        screen = <ListDetailView id={route.id} navigate={navigate} canGoBack={previous.current !== null} />;
+        break;
       case 'more':
         screen = <MoreView />;
         break;
@@ -64,7 +71,7 @@ function Screens() {
 
   return (
     <AppShell route={route} navigate={navigate} autoOpenInput={autoOpen}>
-      <div key={tabOf(route) + (route.name === 'day' ? '-day' : '')} className="screen">
+      <div key={tabOf(route) + (route.name === 'day' ? '-day' : route.name === 'list' ? '-list' : '')} className="screen">
         {screen}
       </div>
     </AppShell>

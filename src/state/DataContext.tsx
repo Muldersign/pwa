@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { localRepository } from '../storage/instance';
-import type { PlannerRepository, PlannerSnapshot } from '../storage/repository';
+import { EMPTY_SNAPSHOT, type PlannerRepository, type PlannerSnapshot } from '../storage/repository';
 import { seedIfFirstRun } from '../storage/seed';
 
 interface DataState extends PlannerSnapshot {
@@ -10,7 +10,7 @@ interface DataState extends PlannerSnapshot {
   reload: () => Promise<void>;
 }
 
-const EMPTY: PlannerSnapshot = { activities: [], meals: [], groceries: [], notes: [] };
+const EMPTY: PlannerSnapshot = EMPTY_SNAPSHOT;
 
 const DataContext = createContext<DataState | null>(null);
 

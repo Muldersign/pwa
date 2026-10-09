@@ -4,10 +4,14 @@ import type {
   DayNote,
   GroceryItem,
   ISODate,
+  ListItem,
   Meal,
   NewActivity,
   NewGroceryItem,
+  NewListItem,
   NewMeal,
+  NewPlannerList,
+  PlannerList,
 } from '../domain/types';
 import { createId, isUuid } from '../lib/id';
 import { recordKey, SYNC_TABLES, type OutboxEntry, type RemoteRow, type SyncRecord, type SyncTable } from '../sync/types';
@@ -25,6 +29,8 @@ class PlannerDatabase extends Dexie {
   notes!: Table<DayNote, string>;
   meta!: Table<MetaRow, string>;
   outbox!: Table<OutboxEntry, number>;
+  lists!: Table<PlannerList, string>;
+  listItems!: Table<ListItem, string>;
 
   constructor(name: string) {
     super(name);
@@ -38,6 +44,11 @@ class PlannerDatabase extends Dexie {
     // v2: outbox of local changes waiting to be synced.
     this.version(2).stores({
       outbox: '++seq, [table+key]',
+    });
+    // v3: lijstjes (guest lists with responses).
+    this.version(3).stores({
+      lists: 'id, date',
+      listItems: 'id, listId',
     });
   }
 }
@@ -93,13 +104,15 @@ export class IndexedDbRepository implements PlannerRepository {
   }
 
   async loadAll(): Promise<PlannerSnapshot> {
-    const [activities, meals, groceries, notes] = await Promise.all([
+    const [activities, meals, groceries, notes, lists, listItems] = await Promise.all([
       this.db.activities.toArray(),
       this.db.meals.toArray(),
       this.db.groceries.toArray(),
       this.db.notes.toArray(),
+      this.db.lists.toArray(),
+      this.db.listItems.toArray(),
     ]);
-    return { activities, meals, groceries, notes };
+    return { activities, meals, groceries, notes, lists, listItems };
   }
 
   async addActivity(input: NewActivity): Promise<Activity> {
@@ -172,23 +185,70 @@ export class IndexedDbRepository implements PlannerRepository {
     await this.changed([{ table: 'notes', key: date }]);
   }
 
+  async addList(input: NewPlannerList): Promise<PlannerList> {
+    const item: PlannerList = { ...input, id: createId(), createdAt: now(), updatedAt: now() };
+    await this.db.lists.add(item);
+    await this.changed([{ table: 'lists', key: item.id }]);
+    return item;
+  }
+  async updateList(id: string, patch: Partial<NewPlannerList>) {
+    await this.db.lists.update(id, { ...patch, updatedAt: now() });
+    await this.changed([{ table: 'lists', key: id }]);
+  }
+  async deleteList(id: string) {
+    const list = await this.db.lists.get(id);
+    if (!list) return undefined;
+    const items = await this.db.listItems.where('listId').equals(id).toArray();
+    await this.db.transaction('rw', [this.db.lists, this.db.listItems], async () => {
+      await this.db.listItems.bulkDelete(items.map((i) => i.id));
+      await this.db.lists.delete(id);
+    });
+    await this.changed([
+      { table: 'lists', key: id },
+      ...items.map((i) => ({ table: 'listItems' as const, key: i.id })),
+    ]);
+    return { list, items };
+  }
+  async putList(list: PlannerList) {
+    await this.db.lists.put({ ...list, updatedAt: now() });
+    await this.changed([{ table: 'lists', key: list.id }]);
+  }
+
+  async addListItem(input: NewListItem): Promise<ListItem> {
+    const item: ListItem = { ...input, id: createId(), createdAt: now(), updatedAt: now() };
+    await this.db.listItems.add(item);
+    await this.changed([{ table: 'listItems', key: item.id }]);
+    return item;
+  }
+  async updateListItem(id: string, patch: Partial<NewListItem>) {
+    await this.db.listItems.update(id, { ...patch, updatedAt: now() });
+    await this.changed([{ table: 'listItems', key: id }]);
+  }
+  async deleteListItem(id: string) {
+    await this.db.listItems.delete(id);
+    await this.changed([{ table: 'listItems', key: id }]);
+  }
+  async putListItem(item: ListItem) {
+    await this.db.listItems.put({ ...item, updatedAt: now() });
+    await this.changed([{ table: 'listItems', key: item.id }]);
+  }
+
   async replaceAll(snapshot: PlannerSnapshot) {
     const before = await this.loadAll();
     const stamp = now();
+    const stampAll = <T extends { updatedAt: string }>(rows: T[] | undefined) => (rows ?? []).map((r) => ({ ...r, updatedAt: stamp }));
     const fresh: PlannerSnapshot = {
-      activities: snapshot.activities.map((r) => ({ ...r, updatedAt: stamp })),
-      meals: snapshot.meals.map((r) => ({ ...r, updatedAt: stamp })),
-      groceries: snapshot.groceries.map((r) => ({ ...r, updatedAt: stamp })),
-      notes: snapshot.notes.map((r) => ({ ...r, updatedAt: stamp })),
+      activities: stampAll(snapshot.activities),
+      meals: stampAll(snapshot.meals),
+      groceries: stampAll(snapshot.groceries),
+      notes: stampAll(snapshot.notes),
+      lists: stampAll(snapshot.lists),
+      listItems: stampAll(snapshot.listItems),
     };
-    await this.db.transaction('rw', [this.db.activities, this.db.meals, this.db.groceries, this.db.notes], async () => {
-      await Promise.all([this.db.activities.clear(), this.db.meals.clear(), this.db.groceries.clear(), this.db.notes.clear()]);
-      await Promise.all([
-        this.db.activities.bulkAdd(fresh.activities),
-        this.db.meals.bulkAdd(fresh.meals),
-        this.db.groceries.bulkAdd(fresh.groceries),
-        this.db.notes.bulkAdd(fresh.notes),
-      ]);
+    const tables = SYNC_TABLES.map((t) => this.table(t));
+    await this.db.transaction('rw', tables, async () => {
+      await Promise.all(tables.map((t) => t.clear()));
+      await Promise.all(SYNC_TABLES.map((t) => this.table(t).bulkAdd(fresh[t] as SyncRecord[])));
     });
     // Everything that existed before or exists now has changed (or was removed).
     const keys = new Map<string, OutboxEntry>();
@@ -268,7 +328,7 @@ export class IndexedDbRepository implements PlannerRepository {
     if (!rows.length) return;
     await this.db.transaction(
       'rw',
-      [this.db.activities, this.db.meals, this.db.groceries, this.db.notes, this.db.outbox],
+      [...SYNC_TABLES.map((t) => this.table(t)), this.db.outbox],
       async () => {
         for (const row of rows) {
           const t = this.table(row.table);
@@ -285,26 +345,16 @@ export class IndexedDbRepository implements PlannerRepository {
 
   /** Clears planner data without queueing deletes (used when joining another household). */
   async clearLocalOnly() {
-    await this.db.transaction(
-      'rw',
-      [this.db.activities, this.db.meals, this.db.groceries, this.db.notes, this.db.outbox],
-      async () => {
-        await Promise.all([
-          this.db.activities.clear(),
-          this.db.meals.clear(),
-          this.db.groceries.clear(),
-          this.db.notes.clear(),
-          this.db.outbox.clear(),
-        ]);
-      },
-    );
+    await this.db.transaction('rw', [...SYNC_TABLES.map((t) => this.table(t)), this.db.outbox], async () => {
+      await Promise.all([...SYNC_TABLES.map((t) => this.table(t).clear()), this.db.outbox.clear()]);
+    });
     this.emit();
   }
 
   /** Gives records created with an old non-UUID id a UUID, which the server requires. */
   async ensureUuidIds() {
-    await this.db.transaction('rw', [this.db.activities, this.db.meals, this.db.groceries], async () => {
-      for (const t of ['activities', 'meals', 'groceries'] as const) {
+    await this.db.transaction('rw', [this.db.activities, this.db.meals, this.db.groceries, this.db.lists, this.db.listItems], async () => {
+      for (const t of ['activities', 'meals', 'groceries', 'lists', 'listItems'] as const) {
         const table = this.table(t);
         const bad = (await table.toArray()).filter((r) => !isUuid((r as { id: string }).id));
         for (const r of bad) {

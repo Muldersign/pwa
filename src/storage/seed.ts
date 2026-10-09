@@ -4,7 +4,7 @@ import { toISODate, weekStart } from '../lib/dates';
 import { createId } from '../lib/id';
 import { categorizeGrocery } from '../services/groceryCategorizer';
 import { suggestIngredients } from '../services/recipes';
-import type { PlannerRepository, PlannerSnapshot } from './repository';
+import { EMPTY_SNAPSHOT, type PlannerRepository, type PlannerSnapshot } from './repository';
 
 const SEEDED_KEY = 'seeded-v1';
 
@@ -58,7 +58,14 @@ export function buildDemoData(now = new Date()): PlannerSnapshot {
     completed: false,
   }));
 
-  return { activities, meals, groceries, notes: [{ date: day(6), text: 'Om 14:30 vertrekken naar oma.', updatedAt: stamp }] };
+  return {
+    activities,
+    meals,
+    groceries,
+    notes: [{ date: day(6), text: 'Om 14:30 vertrekken naar oma.', updatedAt: stamp }],
+    lists: [],
+    listItems: [],
+  };
 }
 
 /** Seeds demo data once, on the very first launch. */
@@ -75,5 +82,5 @@ export async function resetToDemoData(repo: PlannerRepository): Promise<void> {
 }
 
 export async function clearAllData(repo: PlannerRepository): Promise<void> {
-  await repo.replaceAll({ activities: [], meals: [], groceries: [], notes: [] });
+  await repo.replaceAll(EMPTY_SNAPSHOT);
 }

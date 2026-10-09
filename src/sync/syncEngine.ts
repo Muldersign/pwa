@@ -131,8 +131,15 @@ export class SyncEngine {
     }
     this.setStatus({ phase: 'syncing', error: undefined });
     try {
-      await this.push();
+      // Pull even when part of the push failed, so the other device's changes still arrive.
+      let pushError: unknown;
+      try {
+        await this.push();
+      } catch (e) {
+        pushError = e;
+      }
       await this.pull();
+      if (pushError) throw pushError;
       const at = new Date().toISOString();
       await this.local.setMeta(`sync.last.${this.householdId}`, at);
       await this.refreshPending();
@@ -152,35 +159,55 @@ export class SyncEngine {
     const latest = new Map<string, OutboxEntry>();
     for (const e of entries) latest.set(`${e.table}:${e.key}`, e);
 
+    // Each table is pushed on its own, so one failing table (e.g. a table the
+    // server does not have yet) does not block the others.
+    const failed = new Set<SyncTable>();
+    let firstError: unknown;
     for (const table of SYNC_TABLES) {
       const keys = [...latest.values()].filter((e) => e.table === table).map((e) => e.key);
       if (!keys.length) continue;
-      const upserts: SyncRecord[] = [];
-      const deletes: string[] = [];
-      for (const key of keys) {
-        const rec = await this.local.getRecord(table, key);
-        if (rec) upserts.push(rec);
-        else deletes.push(key);
-      }
-      for (let i = 0; i < upserts.length; i += 200) {
-        await this.remote.upsert(this.householdId, table, upserts.slice(i, i + 200));
-      }
-      if (deletes.length) {
-        await this.remote.markDeleted(this.householdId, table, deletes, new Date().toISOString());
+      try {
+        const upserts: SyncRecord[] = [];
+        const deletes: string[] = [];
+        for (const key of keys) {
+          const rec = await this.local.getRecord(table, key);
+          if (rec) upserts.push(rec);
+          else deletes.push(key);
+        }
+        for (let i = 0; i < upserts.length; i += 200) {
+          await this.remote.upsert(this.householdId, table, upserts.slice(i, i + 200));
+        }
+        if (deletes.length) {
+          await this.remote.markDeleted(this.householdId, table, deletes, new Date().toISOString());
+        }
+      } catch (e) {
+        failed.add(table);
+        firstError ??= e;
       }
     }
-    // Only clear what we sent; changes made during the push stay queued.
-    await this.local.removeOutbox(entries.map((e) => e.seq!).filter((s) => s !== undefined));
+    // Only clear what we sent; changes made during the push stay queued, and so
+    // do the rows of tables that failed.
+    await this.local.removeOutbox(
+      entries.filter((e) => !failed.has(e.table) && e.seq !== undefined).map((e) => e.seq!),
+    );
+    if (firstError) throw firstError;
   }
 
   async pull() {
     const pending = new Map<string, true>();
     for (const e of await this.local.readOutbox()) pending.set(`${e.table}:${e.key}`, true);
 
+    let firstError: unknown;
     for (const table of SYNC_TABLES) {
       const cursor = await this.local.getMeta<string>(cursorKey(this.householdId, table));
       const since = cursor ? new Date(new Date(cursor).getTime() - CURSOR_OVERLAP_MS).toISOString() : null;
-      const rows = await this.remote.pullSince(this.householdId, table, since);
+      let rows: RemoteRow[];
+      try {
+        rows = await this.remote.pullSince(this.householdId, table, since);
+      } catch (e) {
+        firstError ??= e;
+        continue;
+      }
       if (!rows.length) continue;
 
       const apply: RemoteRow[] = [];
@@ -204,6 +231,7 @@ export class SyncEngine {
       const maxSynced = rows.reduce((m, r) => (r.syncedAt > m ? r.syncedAt : m), cursor ?? '');
       await this.local.setMeta(cursorKey(this.householdId, table), maxSynced);
     }
+    if (firstError) throw firstError;
   }
 
   /** Forget cursors so the next pull downloads everything again. */

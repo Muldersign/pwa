@@ -5,9 +5,11 @@ export type Route =
   | { name: 'week'; week?: string }
   | { name: 'day'; date: string }
   | { name: 'groceries' }
+  | { name: 'lists' }
+  | { name: 'list'; id: string }
   | { name: 'more' };
 
-export type TabName = 'today' | 'week' | 'groceries' | 'more';
+export type TabName = 'today' | 'week' | 'groceries' | 'lists' | 'more';
 
 function parseHash(hash: string): { route: Route; query: URLSearchParams } {
   const [path, qs] = hash.replace(/^#\/?/, '').split('?');
@@ -21,6 +23,11 @@ function parseHash(hash: string): { route: Route; query: URLSearchParams } {
       break;
     case 'boodschappen':
       return { route: { name: 'groceries' }, query };
+    case 'lijstjes':
+      return { route: { name: 'lists' }, query };
+    case 'lijst':
+      if (parts[1]) return { route: { name: 'list', id: parts[1] }, query };
+      return { route: { name: 'lists' }, query };
     case 'meer':
       return { route: { name: 'more' }, query };
   }
@@ -37,6 +44,10 @@ export function routeToHash(route: Route): string {
       return `#/dag/${route.date}`;
     case 'groceries':
       return '#/boodschappen';
+    case 'lists':
+      return '#/lijstjes';
+    case 'list':
+      return `#/lijst/${route.id}`;
     case 'more':
       return '#/meer';
   }
@@ -68,5 +79,6 @@ export function useHashRouter() {
 
 export function tabOf(route: Route): TabName {
   if (route.name === 'day') return 'week';
+  if (route.name === 'list') return 'lists';
   return route.name;
 }

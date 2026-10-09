@@ -29,7 +29,8 @@ De app opent dan fullscreen (standalone), houdt rekening met de notch/home-indic
 - **Dag** – eten (met ingrediënten → boodschappen), activiteiten (veeg naar links voor wijzigen/verwijderen), notities met autosave, vorige/volgende dag.
 - **Slimme invoer** – chat-achtige sheet; meerdere opdrachten per zin, bevestiging per dag, *Ongedaan maken*, en een keuzevraag bij echte twijfel ("Bedoel je dinsdag 6 oktober of dinsdag 13 oktober?").
 - **Boodschappen** – automatisch per categorie, hele rij is één tik om af te vinken (met animatie), afgevinkt-sectie, wissen met undo, duplicaatcontrole ("Melk staat al op je lijst."), snel toevoegen onderaan (ook "2 liter melk" of "melk, brood en kaas").
-- **Meer** – AI-instelling, voorbeeldzinnen, installatie-uitleg, back-up downloaden/terugzetten, demo-data herstellen, alles wissen.
+- **Lijstjes** – gastenlijsten met per persoon komt / misschien / komt niet / nog geen reactie (één tik), tellers en filter, aantal personen per gast, overzicht delen. Via de slimme invoer: "Jan komt niet", "Stefan komt naar bier". Database: `supabase/migrations/20261009120000_lijstjes.sql`.
+- **Meer** (tandwiel rechtsboven op Vandaag) – AI-instelling, voorbeeldzinnen, installatie-uitleg, back-up downloaden/terugzetten, demo-data herstellen, alles wissen.
 
 ### Begrepen opdrachten (lokale parser, werkt offline)
 

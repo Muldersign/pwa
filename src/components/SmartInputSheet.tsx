@@ -41,7 +41,7 @@ interface Props {
 }
 
 export function SmartInputSheet({ open, prefill, onClose, onOpenDay }: Props) {
-  const { repo, activities, meals, groceries, notes } = useData();
+  const { repo, activities, meals, groceries, notes, lists, listItems } = useData();
   const sync = useSync();
   const online = useOnline();
   const [value, setValue] = useState('');
@@ -91,7 +91,7 @@ export function SmartInputSheet({ open, prefill, onClose, onOpenDay }: Props) {
       const started = performance.now();
       const parsed = await parseNaturalLanguageCommand(input, {
         useAI: getSettings().useAI,
-        data: { activities, meals, groceries, notes },
+        data: { activities, meals, groceries, notes, lists, listItems },
       });
       patchTurn(id, { source: parsed.source, aiError: parsed.aiError });
       // A short, deliberate pause reads as "thinking" instead of a flicker.

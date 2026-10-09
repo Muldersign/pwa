@@ -1,4 +1,4 @@
-import type { ActivityCategory, Assignee, ClockTime, ISODate, MealType } from './types';
+import type { ActivityCategory, Assignee, ClockTime, ISODate, ListItemStatus, MealType } from './types';
 
 /**
  * Structured commands produced by the natural-language parser (local or AI).
@@ -38,7 +38,9 @@ export type PlannerAction =
     }
   | { type: 'UPDATE_MEAL'; title?: string; date?: ISODate; newTitle: string }
   | { type: 'MOVE_ACTIVITY'; title: string; date?: ISODate; newDate?: ISODate; newTime?: ClockTime }
-  | { type: 'MOVE_MEAL'; title: string; date?: ISODate; newDate: ISODate };
+  | { type: 'MOVE_MEAL'; title: string; date?: ISODate; newDate: ISODate }
+  /** RSVP on a guest list: "Jan komt niet", "Oma komt naar familie". */
+  | { type: 'SET_LIST_STATUS'; name: string; status: ListItemStatus; listTitle?: string };
 
 export type PlannerActionType = PlannerAction['type'];
 
@@ -71,4 +73,5 @@ export const ACTION_TYPES: PlannerActionType[] = [
   'UPDATE_MEAL',
   'MOVE_ACTIVITY',
   'MOVE_MEAL',
+  'SET_LIST_STATUS',
 ];

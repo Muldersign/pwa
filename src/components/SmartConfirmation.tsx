@@ -3,6 +3,7 @@ import type { ISODate } from '../domain/types';
 import { capitalize, formatLongDate, formatWeekday, relativeDayLabel } from '../lib/dates';
 import { MEAL_LABELS } from '../lib/timeline';
 import type { Change } from '../services/actionExecutor';
+import { STATUS_LABELS } from '../lib/listStatus';
 import { CategoryIcon } from './CategoryIcon';
 
 interface Props {
@@ -31,6 +32,10 @@ export function headline(changes: Change[]): { text: string; ok: boolean } {
   const kinds = new Set(effective.map((c) => (c.kind === 'restored' ? 'added' : c.kind)));
   const planned = effective.filter((c) => c.entity === 'activity' || c.entity === 'meal');
   const groceries = effective.filter((c) => c.entity === 'grocery');
+  const responses = effective.filter((c) => c.entity === 'listItem');
+  if (responses.length === effective.length) {
+    return { text: responses.length === 1 ? 'Reactie bijgewerkt' : `${responses.length} reacties bijgewerkt`, ok: true };
+  }
 
   if (kinds.size === 1 && kinds.has('added')) {
     const dates = new Set(planned.map(dateOf));
@@ -63,7 +68,18 @@ function ChangeRow({ change }: { change: Change }) {
       <li className="confirm-row confirm-row--note">
         <Info size={16} />
         <span>
-          Ik kon “{change.query}” niet vinden{change.date ? ` op ${formatLongDate(change.date)}` : ''}.
+          {change.message ?? `Ik kon “${change.query}” niet vinden${change.date ? ` op ${formatLongDate(change.date)}` : ''}.`}
+        </span>
+      </li>
+    );
+  }
+  if (change.entity === 'listItem') {
+    return (
+      <li className="confirm-row">
+        <span className={`status-dot status-dot--${change.item.status}`} aria-hidden="true" />
+        <span className="confirm-row__title">{change.item.name}</span>
+        <span className={`status-tag status-tag--${change.item.status}`}>
+          {change.kind === 'added' ? `Toegevoegd · ${STATUS_LABELS[change.item.status]}` : STATUS_LABELS[change.item.status]}
         </span>
       </li>
     );
@@ -133,12 +149,19 @@ export function SmartConfirmation({ changes, undone, onUndo, onOpenDay }: Props)
   // Group planner changes per day; groceries get their own group.
   const groups = new Map<string, Change[]>();
   for (const c of changes) {
-    const key = c.entity === 'grocery' ? 'grocery' : c.entity === 'unknown' ? 'notes' : (dateOf(c) ?? 'notes');
+    const key =
+      c.entity === 'grocery'
+        ? 'grocery'
+        : c.entity === 'listItem'
+          ? `list:${c.list.title}`
+          : c.entity === 'unknown'
+            ? 'notes'
+            : (dateOf(c) ?? 'notes');
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(c);
   }
   const ordered = [...groups.entries()].sort(([a], [b]) => {
-    const rank = (k: string) => (k === 'notes' ? 2 : k === 'grocery' ? 1 : 0);
+    const rank = (k: string) => (k === 'notes' ? 3 : k.startsWith('list:') ? 2 : k === 'grocery' ? 1 : 0);
     return rank(a) - rank(b) || a.localeCompare(b);
   });
   const canUndo = !!onUndo && changes.some(isEffective);
@@ -155,7 +178,9 @@ export function SmartConfirmation({ changes, undone, onUndo, onOpenDay }: Props)
       {ordered.map(([key, list]) => (
         <section key={key} className="confirm-group">
           {key !== 'notes' && (
-            <h4 className="confirm-group__title">{key === 'grocery' ? 'Boodschappen' : capitalize(formatLongDate(key))}</h4>
+            <h4 className="confirm-group__title">
+              {key === 'grocery' ? 'Boodschappen' : key.startsWith('list:') ? `Lijst · ${key.slice(5)}` : capitalize(formatLongDate(key))}
+            </h4>
           )}
           <ul>
             {list.map((c, i) => (
@@ -171,7 +196,7 @@ export function SmartConfirmation({ changes, undone, onUndo, onOpenDay }: Props)
               <Undo2 size={15} /> Ongedaan maken
             </button>
           )}
-          {firstDate && onOpenDay && changes.some((c) => c.entity !== 'grocery' && isEffective(c) && c.kind !== 'removed') && (
+          {firstDate && onOpenDay && changes.some((c) => (c.entity === 'activity' || c.entity === 'meal') && isEffective(c) && c.kind !== 'removed') && (
             <button type="button" className="chip chip--ghost chip--small" onClick={() => onOpenDay(firstDate)}>
               Bekijk {relativeDayLabel(firstDate).split(' ')[0]} <ArrowRight size={15} />
             </button>
