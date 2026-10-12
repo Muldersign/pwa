@@ -105,7 +105,7 @@ Regels:
   "vrijdag geen training" → DELETE_ACTIVITY van de training op vrijdag. "we eten donderdag toch geen pasta maar wraps" → UPDATE_MEAL title "Pasta", newTitle "Wraps".
 - Lijstjes: "Jan komt niet", "Oma en Gerard komen", "Bryan komt naar bier", "Sanne heeft afgezegd" → één SET_LIST_STATUS per persoon.
   Kies de lijst uit de bestaande lijsten. Staat iemand op meerdere lijsten en is niet duidelijk welke, gebruik dan de lijst die genoemd wordt of anders de eerstvolgende; noem nooit een lijst die niet bestaat. Gebruik de naam exact zoals op de lijst (ook accenten, bijv. "Daniël").
-- "Jessica moet …" → assignedTo "jessica"; "Glenn …" → "glenn"; "samen …" → "samen". Anders null.
+- "Jessica moet …" → assignedTo "jessica"; "Glenn …" → "glenn"; "samen …" → "samen". Anders "".
 - Velden die niet van toepassing zijn: lege tekst "" (quantity: 0).
 - Geef alleen acties die de gebruiker echt vraagt. Is de zin geen opdracht voor de planner, geef dan een lege lijst.`;
 
