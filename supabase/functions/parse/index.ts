@@ -12,7 +12,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.131.0';
 
 const MODEL = 'claude-opus-5-5';
 /** Shown in every error, so it is easy to see which deployment answered. */
-const FUNCTION_VERSION = 'v4';
+const FUNCTION_VERSION = 'v5';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,11 +20,31 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Nullable fields use anyOf: the structured-output validator does not accept
-// type arrays combined with enum.
-const nullable = (schema: Record<string, unknown>) => ({ anyOf: [schema, { type: 'null' }] });
-const nullableString = nullable({ type: 'string' });
-const nullableEnum = (values: string[]) => nullable({ type: 'string', enum: values });
+// No nullable/union types: the structured-output compiler allows at most 16
+// union-typed fields. "Not applicable" is an empty string (or 0 for quantity);
+// those are stripped before the actions are returned.
+const text = { type: 'string' };
+const choice = (values: string[]) => ({ type: 'string', enum: ['', ...values] });
+
+const FIELDS = {
+  date: text,
+  title: text,
+  time: text,
+  endTime: text,
+  location: text,
+  category: choice(['work', 'sport', 'social', 'home', 'appointment', 'travel', 'other']),
+  mealType: choice(['breakfast', 'lunch', 'dinner', 'snack']),
+  name: text,
+  quantity: { type: 'number' },
+  unit: text,
+  newTitle: text,
+  newDate: text,
+  newTime: text,
+  newLocation: text,
+  assignedTo: choice(['glenn', 'jessica', 'samen']),
+  status: choice(['yes', 'maybe', 'no', 'pending']),
+  listTitle: text,
+};
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -36,10 +56,7 @@ const OUTPUT_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: [
-          'type', 'date', 'title', 'time', 'endTime', 'location', 'category', 'mealType', 'name', 'quantity', 'unit',
-          'newTitle', 'newDate', 'newTime', 'newLocation', 'assignedTo', 'status', 'listTitle',
-        ],
+        required: ['type', ...Object.keys(FIELDS)],
         properties: {
           type: {
             type: 'string',
@@ -48,23 +65,7 @@ const OUTPUT_SCHEMA = {
               'UPDATE_ACTIVITY', 'UPDATE_MEAL', 'MOVE_ACTIVITY', 'MOVE_MEAL', 'SET_LIST_STATUS',
             ],
           },
-          date: nullableString,
-          title: nullableString,
-          time: nullableString,
-          endTime: nullableString,
-          location: nullableString,
-          category: nullableEnum(['work', 'sport', 'social', 'home', 'appointment', 'travel', 'other']),
-          mealType: nullableEnum(['breakfast', 'lunch', 'dinner', 'snack']),
-          name: nullableString,
-          quantity: nullable({ type: 'number' }),
-          unit: nullableString,
-          newTitle: nullableString,
-          newDate: nullableString,
-          newTime: nullableString,
-          newLocation: nullableString,
-          assignedTo: nullableEnum(['glenn', 'jessica', 'samen']),
-          status: nullableEnum(['yes', 'maybe', 'no', 'pending']),
-          listTitle: nullableString,
+          ...FIELDS,
         },
       },
     },
@@ -81,7 +82,7 @@ Actietypes:
 - DELETE_ACTIVITY / DELETE_MEAL: title (van het bestaande item), date
 - DELETE_GROCERY: name
 - UPDATE_ACTIVITY: title + date van het bestaande item, plus newTitle / newTime / newLocation
-- UPDATE_MEAL: title + date van de bestaande maaltijd (title mag null zijn = "het avondeten van die dag"), newTitle
+- UPDATE_MEAL: title + date van de bestaande maaltijd (title mag "" zijn = "het avondeten van die dag"), newTitle
 - MOVE_ACTIVITY: title + date van het bestaande item, newDate en/of newTime
 - MOVE_MEAL: title + date, newDate
 - SET_LIST_STATUS: reactie op een gastenlijst. name = de persoon (precies zoals op de lijst), status = yes (komt) / no (komt niet, afgezegd) / maybe (misschien, twijfelt) / pending (nog geen reactie), listTitle = de titel van de lijst
@@ -105,7 +106,7 @@ Regels:
 - Lijstjes: "Jan komt niet", "Oma en Gerard komen", "Bryan komt naar bier", "Sanne heeft afgezegd" → één SET_LIST_STATUS per persoon.
   Kies de lijst uit de bestaande lijsten. Staat iemand op meerdere lijsten en is niet duidelijk welke, gebruik dan de lijst die genoemd wordt of anders de eerstvolgende; noem nooit een lijst die niet bestaat. Gebruik de naam exact zoals op de lijst (ook accenten, bijv. "Daniël").
 - "Jessica moet …" → assignedTo "jessica"; "Glenn …" → "glenn"; "samen …" → "samen". Anders null.
-- Velden die niet van toepassing zijn: null.
+- Velden die niet van toepassing zijn: lege tekst "" (quantity: 0).
 - Geef alleen acties die de gebruiker echt vraagt. Is de zin geen opdracht voor de planner, geef dan een lege lijst.`;
 
 interface ParseBody {
@@ -171,7 +172,9 @@ Deno.serve(async (req: Request) => {
     if (!text || text.type !== 'text') return json({ error: 'Empty model response' }, 502);
 
     const parsed = JSON.parse(text.text) as { actions?: Record<string, unknown>[] };
-    const actions = (parsed.actions ?? []).map((a) => Object.fromEntries(Object.entries(a).filter(([, v]) => v !== null)));
+    const actions = (parsed.actions ?? []).map((a) =>
+      Object.fromEntries(Object.entries(a).filter(([k, v]) => v !== null && v !== '' && !(k === 'quantity' && v === 0))),
+    );
     return json({ actions, model: response.model });
   } catch (error) {
     if (error instanceof Anthropic.AuthenticationError) return json({ error: 'Invalid ANTHROPIC_API_KEY' }, 500);
