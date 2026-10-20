@@ -1,0 +1,227 @@
+import type { PhotoScene } from '../../engine/types';
+
+// Kleuren van kleding blijven over alle foto's gelijk, zodat de speler mensen
+// kan herkennen en vergelijken.
+const C = {
+  rick: '#b8322a',
+  stefan: '#d9d2bf',
+  yvan: '#2b3d5e',
+  alex: '#c58b2a',
+  glenn: '#4f6b3a',
+  jessica: '#c45a7c',
+  sanne: '#2f6b5a',
+  maureen: '#5b4a7b',
+  danielle: '#9a7a32',
+  jolien: '#3d4f7a',
+  milo: '#6a5440',
+  bennie: '#e8e1d0',
+};
+
+export const photos: PhotoScene[] = [
+  {
+    id: 'foto_2335',
+    caption: 'Sanne Roossien — 14 april 2024, "de laatste ronde"',
+    stamp: '14-04-24 23:35',
+    palette: 'sepia',
+    damaged: true,
+    objects: [
+      { kind: 'lamp', x: 80 },
+      { kind: 'lamp', x: 300 },
+      { kind: 'sign', x: 30, y: 28, w: 70, label: 'NoAB' },
+      { kind: 'clock', x: 200, y: 52, value: '23:35' },
+      { kind: 'coat-hooks', x: 290, y: 92, value: 'R,S,Y,A,!G' },
+      { kind: 'bar', x: 10, w: 380 },
+      { kind: 'trophy', x: 250 },
+      { kind: 'confetti', x: 0 },
+      { kind: 'speaker', x: 40, y: 205 },
+      { kind: 'stain', x: 345, y: 40 },
+    ],
+    figures: [
+      { label: 'Rick', x: 95, shirt: C.rick, pose: 'arms-up', blur: true },
+      { label: 'Jessica', x: 160, shirt: C.jessica, pose: 'stand', prop: 'phone' },
+      { label: 'Stefan', x: 330, shirt: C.stefan, pose: 'hold', prop: 'glass', scale: 0.9 },
+    ],
+    hotspots: [
+      { id: 'hs_trophy', x: 250, y: 150, r: 22, label: 'Gouden voorwerp op de bar', detail: 'De Golden Cock staat nog fier op de bar, naast de tap. Onmiskenbaar: gouden schacht, logo "B.o.B." op de sokkel.' },
+      { id: 'hs_clock', x: 200, y: 52, r: 22, label: 'Klok boven de bar', detail: 'De wandklok wijst 23.35 uur aan. De tijdstempel in de hoek van de foto zegt hetzelfde: 14-04-24 23:35.' },
+      { id: 'hs_hook', x: 362, y: 100, r: 14, label: 'Kapstok', detail: 'Haakjes met namen in Ricks handschrift: R, S, Y, A, G. Bij "G." hangt niets meer: Glenns jas is al weg.' },
+      { id: 'hs_stain', x: 345, y: 40, r: 26, label: 'Vlek', detail: 'Een bierkring. Schade aan de foto, maar geen aanwijzing.' },
+      { id: 'hs_confetti', x: 130, y: 40, r: 20, label: 'Confetti', detail: 'Confetti tot aan het plafond. De Bazooka heeft duidelijk al gevuurd.' },
+      { id: 'hs_speaker', x: 40, y: 205, r: 20, label: 'Speaker', detail: 'Een omgevallen speaker met een barst in de behuizing. Kapot vóór deze foto genomen werd.' },
+      { id: 'hs_jessica', anchor: { figure: 1, part: 'hand' }, label: 'Telefoon', detail: 'Jessica filmt of fotografeert iets. Ze filmt altijd iets.' },
+    ],
+  },
+  {
+    id: 'foto_2052',
+    caption: 'Jolien Beemer — de pooltafel',
+    stamp: '24-10-26 20:52',
+    palette: 'warm',
+    objects: [
+      { kind: 'lamp', x: 200 },
+      { kind: 'clock', x: 350, y: 50, value: '20:52' },
+      { kind: 'pool', x: 70, w: 260 },
+    ],
+    figures: [
+      { label: 'Yvan', x: 110, shirt: C.yvan, pose: 'hold', prop: 'cue', cufflinks: 2 },
+      { label: 'Daniëlle', x: 300, shirt: C.danielle, pose: 'stand', prop: 'cue' },
+    ],
+    hotspots: [
+      { id: 'hs_chalk', anchor: { figure: 0, part: 'hand' }, label: 'Handen Yvan', detail: 'Yvan krijt zijn keu met blauw biljartkrijt, zoals na elke stoot. Zijn vingertoppen kleuren blauw.' },
+      { id: 'hs_dan', anchor: { figure: 1, part: 'hand' }, label: 'Handen Daniëlle', detail: 'Daniëlle wacht op haar beurt. Ook haar vingers zijn een beetje blauw.' },
+      { id: 'hs_cuff', anchor: { figure: 0, part: 'wristL' }, label: 'Mouw Yvan', detail: 'Donkerblauw overhemd met gouden B.o.B.-manchetknopen.' },
+    ],
+  },
+  {
+    id: 'foto_2105',
+    caption: 'Jolien Beemer — niet geselecteerd',
+    stamp: '24-10-26 21:05',
+    palette: 'cold',
+    objects: [
+      { kind: 'door', x: 230, w: 90, label: 'PRIVÉ' },
+      { kind: 'lamp', x: 120 },
+    ],
+    figures: [{ label: 'Jessica', x: 180, shirt: C.jessica, pose: 'hold', prop: 'envelope', blur: true }],
+    hotspots: [
+      { id: 'hs_env', anchor: { figure: 0, part: 'hand' }, label: 'Envelop', detail: 'Een dikke bruine envelop. Héél dik.' },
+      { id: 'hs_door', x: 275, y: 140, r: 24, label: 'Deur', detail: 'De deur van de achterkamer staat op een kier. Binnen brandt licht.' },
+    ],
+  },
+  {
+    id: 'foto_2110',
+    caption: 'Jolien Beemer — "De Brotherhood herenigd"',
+    stamp: '24-10-26 21:10',
+    palette: 'flash',
+    objects: [
+      { kind: 'sign', x: 140, y: 26, w: 120, label: 'BROTHERHOOD' },
+      { kind: 'table', x: 40, w: 320 },
+    ],
+    figures: [
+      { label: 'Rick', x: 85, shirt: C.rick, pose: 'hold', prop: 'glass', cufflinks: 1 },
+      { label: 'Stefan', x: 160, shirt: C.stefan, pose: 'stand', cufflinks: 2 },
+      { label: 'Yvan', x: 240, shirt: C.yvan, pose: 'stand', cufflinks: 2 },
+      { label: 'Alex', x: 315, shirt: C.alex, pose: 'stand', tshirt: true },
+    ],
+    hotspots: [
+      { id: 'hs_r', anchor: { figure: 0, part: 'wristL' }, label: 'Rick, mouwen', detail: 'Rick: één gouden manchetknoop, links. Rechts niets.' },
+      { id: 'hs_sl', anchor: { figure: 1, part: 'wristL' }, label: 'Stefan, links', detail: 'Stefan, linkermouw: gouden B.o.B.-knoop.' },
+      { id: 'hs_sr', anchor: { figure: 1, part: 'wristR' }, label: 'Stefan, rechts', detail: 'Stefan, rechtermouw: gouden B.o.B.-knoop.' },
+      { id: 'hs_yl', anchor: { figure: 2, part: 'wristL' }, label: 'Yvan, links', detail: 'Yvan, linkermouw (donkerblauw): gouden B.o.B.-knoop.' },
+      { id: 'hs_yr', anchor: { figure: 2, part: 'wristR' }, label: 'Yvan, rechts', detail: 'Yvan, rechtermouw (donkerblauw): gouden B.o.B.-knoop. Glimmend gepoetst.' },
+      { id: 'hs_a', anchor: { figure: 3, part: 'chest' }, label: 'Alex', detail: 'Alex: T-shirt "KEY MASTER". Korte mouwen, geen manchetten.' },
+    ],
+  },
+  {
+    id: 'foto_2123',
+    caption: 'Jolien Beemer — "Milo, de gastheer"',
+    stamp: '24-10-26 21:23',
+    palette: 'warm',
+    objects: [
+      { kind: 'clock', x: 60, y: 50, value: '21:23' },
+      { kind: 'lamp', x: 200 },
+      { kind: 'bar', x: 10, w: 380 },
+    ],
+    figures: [
+      { label: 'Bennie', x: 310, shirt: C.bennie, pose: 'stand', behind: true },
+      { label: 'Milo', x: 190, shirt: C.milo, pose: 'hold', prop: 'key' },
+      { label: 'Alex', x: 90, shirt: C.alex, pose: 'stand', tshirt: true },
+    ],
+    hotspots: [
+      { id: 'hs_key', anchor: { figure: 1, part: 'chest' }, label: 'Koord', detail: 'Aan een rood koord om Milo\'s hals: een ouderwetse sleutel met een label "ACHTERKAMER".' },
+      { id: 'hs_glass', anchor: { figure: 1, part: 'hand' }, label: 'Glas', detail: 'Een dubbele whisky. Milo grijnst als iemand die weet hoe de film afloopt.' },
+    ],
+  },
+  {
+    id: 'foto_2133',
+    caption: 'Jolien Beemer — karaoke',
+    stamp: '24-10-26 21:33',
+    palette: 'warm',
+    objects: [
+      { kind: 'sign', x: 120, y: 24, w: 160, label: 'KARAOKE · MC RICK' },
+      { kind: 'stage', x: 20, w: 300 },
+      { kind: 'table', x: 335, w: 60 },
+    ],
+    figures: [
+      { label: 'Rick', x: 55, shirt: C.rick, pose: 'sing', prop: 'mic', cufflinks: 1 },
+      { label: 'Glenn', x: 135, shirt: C.glenn, pose: 'sing', prop: 'mic' },
+      { label: 'Sanne', x: 205, shirt: C.sanne, pose: 'sing', prop: 'mic' },
+      { label: 'Jessica', x: 275, shirt: C.jessica, pose: 'arms-up' },
+      { label: 'Maureen', x: 365, shirt: C.maureen, pose: 'hold', prop: 'phone', scale: 0.8 },
+    ],
+    hotspots: [
+      { id: 'hs_m', anchor: { figure: 4, part: 'hand' }, label: 'Maureen', detail: 'Maureen typt op haar telefoon. Op het scherm: een chat met "Milo".' },
+      { id: 'hs_r', anchor: { figure: 0, part: 'wristL' }, label: 'Rick', detail: 'Rick, microfoon in de hand. Eén manchetknoop, links.' },
+      { id: 'hs_gs', anchor: { figure: 1, part: 'head' }, label: 'Glenn en Sanne', detail: '"Turn around, bright eyes!" Glenn en Sanne zingen vals maar vol overtuiging.' },
+    ],
+  },
+  {
+    id: 'foto_2138',
+    caption: 'Jolien Beemer — aan de bar',
+    stamp: '24-10-26 21:38',
+    palette: 'warm',
+    objects: [
+      { kind: 'stage', x: 330, w: 70 },
+      { kind: 'bar', x: 10, w: 310 },
+    ],
+    figures: [
+      { label: 'Maureen', x: 365, shirt: C.maureen, pose: 'sing', prop: 'mic', scale: 0.55, behind: true },
+      { label: 'Bennie', x: 210, shirt: C.bennie, pose: 'stand', behind: true },
+      { label: 'Alex', x: 270, shirt: C.alex, pose: 'hold', tshirt: true, behind: true },
+      { label: 'Daniëlle', x: 70, shirt: C.danielle, pose: 'hold', prop: 'glass' },
+      { label: 'Stefan', x: 145, shirt: C.stefan, pose: 'point', prop: 'phone', cufflinks: 2 },
+    ],
+    hotspots: [
+      { id: 'hs_pin', anchor: { figure: 4, part: 'hand' }, label: 'Stefan', detail: 'Stefan houdt zijn telefoon bij de pinautomaat. Het schermpje: "21:38 — €11,20".' },
+      { id: 'hs_scuff', anchor: { figure: 4, part: 'wristL' }, label: 'Mouw Stefan', detail: 'Stefan: gouden manchetknopen, links en rechts.' },
+      { id: 'hs_dh', anchor: { figure: 3, part: 'hand' }, label: 'Daniëlle', detail: 'Daniëlle met een glas wijn. Haar vingers zijn schoon.' },
+      { id: 'hs_mbg', anchor: { figure: 0, part: 'head' }, label: 'Achtergrond', detail: 'Op het podium: Maureen, vol overgave. "Galileo!"' },
+    ],
+  },
+  {
+    id: 'foto_2144',
+    caption: 'Jolien Beemer — "Islands in the Stream"',
+    stamp: '24-10-26 21:44',
+    palette: 'warm',
+    objects: [
+      { kind: 'stage', x: 10, w: 320 },
+      { kind: 'bar', x: 340, w: 60 },
+    ],
+    figures: [
+      { label: 'Rick', x: 50, shirt: C.rick, pose: 'point', prop: 'mic', cufflinks: 1 },
+      { label: 'Jessica', x: 130, shirt: C.jessica, pose: 'sing', prop: 'mic' },
+      { label: 'Glenn', x: 205, shirt: C.glenn, pose: 'sing', prop: 'mic' },
+      { label: 'Sanne', x: 280, shirt: C.sanne, pose: 'arms-up' },
+      { label: 'Daniëlle', x: 370, shirt: C.danielle, pose: 'hold', prop: 'glass', scale: 0.6, behind: true },
+    ],
+    hotspots: [
+      { id: 'hs_dbg', anchor: { figure: 4, part: 'head' }, label: 'Achtergrond', detail: 'Daniëlle aan de bar, kijkend richting de gang.' },
+      { id: 'hs_duet', anchor: { figure: 1, part: 'head' }, label: 'Duet', detail: 'Jessica en Glenn, arm in arm. Niemand op dit podium lijkt iets te vermoeden.' },
+    ],
+  },
+  {
+    id: 'foto_2152',
+    caption: 'Jolien Beemer — de gang, na de ontdekking',
+    stamp: '24-10-26 21:52',
+    palette: 'flash',
+    objects: [
+      { kind: 'door', x: 6, w: 60, label: 'ACHTERKAMER' },
+      { kind: 'coat-hooks', x: 300, y: 70, value: 'S,Y,R,G,J' },
+    ],
+    figures: [
+      { label: 'Rick', x: 95, shirt: C.rick, pose: 'stand', cufflinks: 1, scale: 0.85 },
+      { label: 'Stefan', x: 150, shirt: C.stefan, pose: 'hold', cufflinks: 2, scale: 0.85 },
+      { label: 'Yvan', x: 205, shirt: C.yvan, pose: 'stand', cufflinks: 1, wet: true, scale: 0.85 },
+      { label: 'Glenn', x: 260, shirt: C.glenn, pose: 'hold', scale: 0.85 },
+      { label: 'Jessica', x: 315, shirt: C.jessica, pose: 'hold', scale: 0.85 },
+      { label: 'Alex', x: 370, shirt: C.alex, pose: 'stand', tshirt: true, scale: 0.85 },
+    ],
+    hotspots: [
+      { id: 'hs_yr', anchor: { figure: 2, part: 'wristR' }, label: 'Yvan, rechts', detail: 'Yvans rechtermanchet hangt open. Het knoopsgat is leeg.' },
+      { id: 'hs_yl', anchor: { figure: 2, part: 'wristL' }, label: 'Yvan, links', detail: 'Yvan, linkermouw: gouden B.o.B.-knoop.' },
+      { id: 'hs_yh', anchor: { figure: 2, part: 'head' }, label: 'Yvan', detail: 'Nat haar, rode wangen. Hij komt net van buiten, zegt hij.' },
+      { id: 'hs_s', anchor: { figure: 1, part: 'wristL' }, label: 'Stefan', detail: 'Stefan, lijkbleek. Beide manchetknopen zitten er nog.' },
+      { id: 'hs_r', anchor: { figure: 0, part: 'wristL' }, label: 'Rick', detail: 'Rick: één knoop, links. Rechts leeg, net als om 21.10.' },
+      { id: 'hs_a', anchor: { figure: 5, part: 'chest' }, label: 'Alex', detail: 'Alex, T-shirt. Geen manchetten. Hij houdt de reservesleutel nog vast.' },
+      { id: 'hs_coat', x: 300, y: 92, r: 16, label: 'Garderobe', detail: 'De eerste haak: een kameelharen jas. Die van Stefan.' },
+    ],
+  },
+];
