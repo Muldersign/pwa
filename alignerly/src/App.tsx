@@ -10,7 +10,7 @@ import { CalendarView } from './views/CalendarView';
 import { StatsView } from './views/StatsView';
 import { SettingsView, seedDemoIfRequested } from './views/SettingsView';
 import { DEFAULT_SETTINGS, type Settings } from './domain/types';
-import { loadSettings } from './storage/repo';
+import { loadSettings, removeFutureEvents } from './storage/repo';
 import { isDemoMode, requestPersistence } from './storage/db';
 import { useReminders } from './lib/useReminders';
 import { Logo } from './components/Logo';
@@ -21,6 +21,7 @@ export default function App() {
     (async () => {
       try {
         await seedDemoIfRequested();
+        await removeFutureEvents();
         const settings = await loadSettings();
         setBoot({ settings });
         void requestPersistence();

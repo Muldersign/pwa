@@ -1,12 +1,12 @@
 import type { BraceEvent, Kind } from '../domain/types';
-import { MIN, formatClock } from './time';
+import { formatClock } from './time';
 import { opposite, sortEvents } from './tracking';
 import { newId } from './id';
 
 /**
  * Pure editing operations on the registration list. Every operation returns the
  * complete new list (or an error in plain Dutch); the caller saves it atomically.
- * Invariants: sorted, at least one minute apart, kinds alternate, nothing in the future.
+ * Invariants: strictly increasing, kinds alternate, nothing in the future.
  */
 
 export type EditResult = { ok: true; events: BraceEvent[]; message?: string } | { ok: false; error: string };
@@ -17,10 +17,10 @@ export function validateSequence(events: BraceEvent[], now: number): string | nu
   const s = sortEvents(events);
   for (let i = 0; i < s.length; i++) {
     const e = s[i];
-    if (e.at > now + MIN) return `Een registratie om ${formatClock(e.at)} ligt in de toekomst.`;
+    if (e.at > now + 5000) return `Een registratie om ${formatClock(e.at)} ligt in de toekomst.`;
     const prev = s[i - 1];
     if (!prev) continue;
-    if (Math.floor(e.at / MIN) === Math.floor(prev.at / MIN))
+    if (e.at <= prev.at)
       return `Er staat al een registratie om ${formatClock(e.at)}. Kies een ander tijdstip.`;
     if (prev.kind === e.kind)
       return `Dit zou twee keer achter elkaar “beugel ${KIND_LABEL[e.kind]}” opleveren (${formatClock(prev.at)} en ${formatClock(e.at)}). Voeg een periode toe of pas een bestaand moment aan.`;
@@ -45,8 +45,9 @@ export function toggle(events: BraceEvent[], now: number, initialKind?: Kind): E
   const last = sorted[sorted.length - 1];
   const kind = last ? opposite(last.kind) : initialKind;
   if (!kind) return { ok: false, error: 'Kies of je beugel nu in of uit is.' };
-  // Keep the sequence strictly increasing even if the device clock jumped back.
-  const at = last ? Math.max(now, last.at + MIN) : now;
+  // Always the real moment of the tap. Only if the device clock jumped back
+  // behind the last registration is it nudged one second past it.
+  const at = last && last.at >= now ? last.at + 1000 : now;
   return finish([...sorted, make(kind, at, 'button')], Math.max(now, at));
 }
 

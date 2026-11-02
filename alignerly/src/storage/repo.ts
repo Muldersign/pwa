@@ -84,3 +84,13 @@ export async function wipeAll() {
     await Promise.all([db.events.clear(), db.notes.clear(), db.confirmations.clear()]);
   });
 }
+
+/**
+ * Repair for an early bug where quick taps were stored up to a few minutes in the future.
+ * Registrations in the future cannot exist otherwise, so they are removed at start-up.
+ */
+export async function removeFutureEvents(now = Date.now()) {
+  const future = await db.events.where('at').above(now + 5000).primaryKeys();
+  if (future.length) await db.events.bulkDelete(future);
+  return future.length;
+}

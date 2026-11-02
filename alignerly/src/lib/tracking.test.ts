@@ -114,8 +114,10 @@ describe('edits', () => {
     const r1 = toggle(base(), now);
     expect(r1.ok && r1.events.at(-1)!.kind).toBe('out');
     if (!r1.ok) return;
-    const r2 = toggle(r1.events, now); // same-minute double tap → pushed a minute later, still alternating
-    expect(r2.ok && validateSequence(r2.events, now + MIN)).toBe(null);
+    // A second tap a few seconds later is stored at its real time, never in the future
+    const r2 = toggle(r1.events, now + 5000);
+    expect(r2.ok && r2.events.at(-1)!.at).toBe(now + 5000);
+    if (r2.ok) expect(validateSequence(r2.events, now + 5000)).toBe(null);
   });
 
   it('adds a forgotten out-period inside a wearing period', () => {
