@@ -519,6 +519,23 @@ p {
 .notice .btn-row {
   margin-top: 10px;
 }
+.notice-warn {
+  background: #fff7e6;
+  color: var(--orange-ink);
+  position: relative;
+  padding-right: 40px;
+}
+.notice-warn svg {
+  color: var(--orange-ink);
+}
+.notice-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 6px;
+  color: var(--orange-ink);
+  display: grid;
+}
 .notice-soft {
   background: #f6f4fa;
 }
@@ -1629,4 +1646,25 @@ button.moment:active {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.storage-info {
+  margin: 10px 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13.5px;
+}
+.storage-info div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.storage-info dt {
+  color: var(--text-2);
+}
+.storage-info dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
 }

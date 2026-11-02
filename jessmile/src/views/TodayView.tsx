@@ -8,6 +8,7 @@ import { MomentList } from '../components/MomentList';
 import { MomentEditor } from '../components/MomentEditor';
 import { AddRegistration } from '../components/AddRegistration';
 import { Logo } from '../components/Logo';
+import { StorageNotice } from '../components/StorageNotice';
 import type { BraceEvent, Kind } from '../domain/types';
 import { computeStats, computeDays, lastNDays } from '../lib/tracking';
 import { dayKey, formatClock, formatDuration, formatDurationWords, formatLongDate, formatStopwatch } from '../lib/time';
@@ -58,6 +59,8 @@ export function TodayView({ onOpenDay, onSettings }: { onOpenDay: (d: string) =>
           <Logo size={44} />
         </button>
       </header>
+
+      <StorageNotice />
 
       <section className="card hero">
         <h2 className="hero-title">Vandaag gedragen</h2>

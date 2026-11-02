@@ -159,6 +159,7 @@ export function SettingsView({ onOpenDay }: { onOpenDay: (d: string) => void }) 
           <ShieldCheck size={17} /> Gegevens
         </h2>
         <p className="hint">Alles wordt alleen op dit apparaat bewaard. Maak af en toe een back-up.</p>
+        <StorageInfo count={events.length} />
         <div className="btn-stack">
           <button className="btn btn-soft" onClick={exportCsv} disabled={!events.length}>
             <Download size={18} /> Exporteren naar CSV
@@ -287,6 +288,28 @@ export async function seedDemoIfRequested() {
     sessionStorage.removeItem('alignerly-seed-demo');
     await seedDemo();
   }
+}
+
+function StorageInfo({ count }: { count: number }) {
+  const [persisted, setPersisted] = useState<boolean | null>(null);
+  useEffect(() => {
+    navigator.storage?.persisted?.().then(setPersisted, () => setPersisted(null));
+  }, []);
+  const rows: [string, string][] = [
+    ['Geopend als', isStandalone() ? 'App op beginscherm' : __SINGLE_FILE__ ? 'Voorbeeldweergave' : 'Browser'],
+    ['Registraties op dit apparaat', String(count)],
+    ['Opslag beschermd tegen opschonen', persisted === null ? 'Onbekend' : persisted ? 'Ja' : isStandalone() ? 'Ja (app op beginscherm)' : 'Nee'],
+  ];
+  return (
+    <dl className="storage-info">
+      {rows.map(([k, v]) => (
+        <div key={k}>
+          <dt>{k}</dt>
+          <dd>{v}</dd>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
