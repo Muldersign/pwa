@@ -1,4 +1,4 @@
-/** Alignerly mark: a soft aligner arch inside a rounded square. */
+/** Jessmile mark: a smile-shaped aligner arch inside a rounded square. */
 export function Logo({ size = 40 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">

@@ -28,8 +28,8 @@ export default defineConfig(({ mode }) => {
             includeAssets: ['icons/apple-touch-icon.png', 'icons/favicon.svg', 'sw-notify.js'],
             manifest: {
               id: './',
-              name: 'Alignerly – Jessica’s beugeltracker',
-              short_name: 'Alignerly',
+              name: 'Jessmile – Jessica’s beugeltracker',
+              short_name: 'Jessmile',
               description: 'Houd met één tik bij hoe lang je aligner vandaag gedragen is.',
               lang: 'nl-NL',
               dir: 'ltr',

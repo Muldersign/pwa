@@ -47,19 +47,19 @@ export async function exportBackup(): Promise<Backup> {
     db.notes.toArray(),
     db.confirmations.toArray(),
   ]);
-  return { app: 'alignerly', version: 1, exportedAt: new Date().toISOString(), settings, events, notes, confirmations };
+  return { app: 'jessmile', version: 1, exportedAt: new Date().toISOString(), settings, events, notes, confirmations };
 }
 
 export function parseBackup(raw: unknown): Backup {
   const b = raw as Partial<Backup>;
-  if (!b || b.app !== 'alignerly' || !Array.isArray(b.events) || !Array.isArray(b.notes))
-    throw new Error('Dit bestand is geen Alignerly-back-up.');
+  if (!b || (b.app !== 'jessmile' && b.app !== 'alignerly') || !Array.isArray(b.events) || !Array.isArray(b.notes))
+    throw new Error('Dit bestand is geen Jessmile-back-up.');
   for (const e of b.events) {
     if (typeof e?.id !== 'string' || (e.kind !== 'in' && e.kind !== 'out') || typeof e.at !== 'number')
       throw new Error('De back-up bevat ongeldige registraties.');
   }
   return {
-    app: 'alignerly',
+    app: 'jessmile',
     version: 1,
     exportedAt: b.exportedAt ?? '',
     settings: { ...DEFAULT_SETTINGS, ...(b.settings ?? {}) },

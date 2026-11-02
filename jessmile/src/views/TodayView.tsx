@@ -50,7 +50,7 @@ export function TodayView({ onOpenDay, onSettings }: { onOpenDay: (d: string) =>
     <div className="view today">
       <header className="hello">
         <div>
-          <p className="eyebrow">Alignerly</p>
+          <p className="eyebrow">Jessmile</p>
           <h1>Hoi {settings.name || 'Jessica'}! 💜</h1>
           <p className="muted capitalize">{formatLongDate(today)}</p>
         </div>
@@ -78,7 +78,7 @@ export function TodayView({ onOpenDay, onSettings }: { onOpenDay: (d: string) =>
         {state.kind === null ? (
           <div className="onboard">
             <p className="onboard-title">Welkom! Zit je beugel er nu in?</p>
-            <p className="muted">Kies hoe het nu is. Vanaf dat moment houdt Alignerly alles automatisch bij, ook als je de app sluit.</p>
+            <p className="muted">Kies hoe het nu is. Vanaf dat moment houdt Jessmile alles automatisch bij, ook als je de app sluit.</p>
             <div className="btn-row">
               <button className="btn btn-primary btn-xl" onClick={() => press('in')}>
                 Hij zit nu in

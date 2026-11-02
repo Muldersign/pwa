@@ -5,7 +5,7 @@ Een rustige, installeerbare Progressive Web App voor de persoonlijke weekplannin
 > "Dinsdag komende week pizza eten en om 19:45 uur trainen in Bareveld"
 > → dinsdag 13 oktober: 🍴 Pizza (avondeten) + 19:45 Training, Bareveld
 
-> Deze repository bevat ook **Alignerly**, Jessica’s beugeltracker (zelfstandige PWA in [`alignerly/`](alignerly/README.md)).
+> Deze repository bevat ook **Jessmile**, Jessica’s beugeltracker (zelfstandige PWA in [`jessmile/`](jessmile/README.md)).
 
 ## Starten
 

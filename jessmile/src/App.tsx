@@ -79,7 +79,7 @@ function Shell() {
 
 function Splash() {
   return (
-    <div className="splash" aria-busy="true" aria-label="Alignerly wordt geladen">
+    <div className="splash" aria-busy="true" aria-label="Jessmile wordt geladen">
       <Logo size={64} />
     </div>
   );
@@ -90,7 +90,7 @@ function Fatal({ message }: { message: string }) {
     <div className="fatal">
       <Logo size={48} />
       <h1>Er ging iets mis</h1>
-      <p>Alignerly kon je gegevens niet openen. Dit gebeurt soms in een privévenster, waar de browser geen opslag toestaat.</p>
+      <p>Jessmile kon je gegevens niet openen. Dit gebeurt soms in een privévenster, waar de browser geen opslag toestaat.</p>
       <p className="muted small">{message}</p>
       <button className="btn btn-primary" onClick={() => location.reload()}>
         Opnieuw proberen

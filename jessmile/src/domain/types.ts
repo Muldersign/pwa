@@ -52,7 +52,7 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export interface Backup {
-  app: 'alignerly';
+  app: 'jessmile' | 'alignerly';
   version: 1;
   exportedAt: string;
   settings: Settings;

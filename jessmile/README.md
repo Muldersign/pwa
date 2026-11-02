@@ -1,11 +1,11 @@
-# Alignerly – Jessica’s beugeltracker
+# Jessmile – Jessica’s beugeltracker
 
 Een installeerbare Progressive Web App waarmee Jessica met één tik bijhoudt hoe lang haar uitneembare aligner gedragen is. Het doel is minimaal 22 uur per dag, dus maximaal 2 uur per dag uit.
 
 ## Starten
 
 ```bash
-cd alignerly
+cd jessmile
 npm install
 npm run dev          # ontwikkelserver op http://localhost:5173
 npm test             # rekenregels: middernacht, zomer-/wintertijd, reeksen, correcties

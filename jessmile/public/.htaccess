@@ -1,4 +1,4 @@
-# Alignerly — Apache config (Cloud86 / shared hosting)
+# Jessmile — Apache config (Cloud86 / shared hosting)
 
 # Always use HTTPS (required for installing the PWA and for the service worker)
 <IfModule mod_rewrite.c>

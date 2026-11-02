@@ -49,7 +49,7 @@ export function notificationsSupported(): boolean {
 
 export async function showNotification(title: string, body: string) {
   if (!notificationsSupported() || Notification.permission !== 'granted') return false;
-  const options: NotificationOptions = { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'alignerly' };
+  const options: NotificationOptions = { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'jessmile' };
   try {
     const reg = await navigator.serviceWorker?.getRegistration();
     if (reg) {

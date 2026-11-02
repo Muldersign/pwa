@@ -55,11 +55,11 @@ export function SettingsView({ onOpenDay }: { onOpenDay: (d: string) => void }) 
   const exportCsv = () => {
     const now = Date.now();
     const days = computeDays(trackedDayKeys(events, now), events, now, { goalMinutes: settings.goalMinutes, confirmed });
-    download(`alignerly-${dayKey(now)}.csv`, buildCsv(days, events, [...notes.values()]), 'text/csv;charset=utf-8');
+    download(`jessmile-${dayKey(now)}.csv`, buildCsv(days, events, [...notes.values()]), 'text/csv;charset=utf-8');
   };
   const exportBackup = async () => {
     const b = await repo.exportBackup();
-    download(`alignerly-backup-${dayKey(Date.now())}.json`, JSON.stringify(b, null, 2), 'application/json');
+    download(`jessmile-backup-${dayKey(Date.now())}.json`, JSON.stringify(b, null, 2), 'application/json');
     toast.show({ text: 'Back-up gedownload' });
   };
   const onFile = async (file: File) => {
@@ -133,12 +133,12 @@ export function SettingsView({ onOpenDay }: { onOpenDay: (d: string) => void }) 
           <ReminderRow label="Na het eten, als de beugel nog uit is" value={r.meal} onChange={(v) => updateReminder('meal', v)} options={[30, 40, 45, 60]} />
         </div>
         {remindersOn && perm === 'granted' && (
-          <button className="btn btn-soft btn-sm" onClick={() => showNotification('Alignerly', 'Zo zien je herinneringen eruit 💜')}>
+          <button className="btn btn-soft btn-sm" onClick={() => showNotification('Jessmile', 'Zo zien je herinneringen eruit 💜')}>
             Testmelding sturen
           </button>
         )}
         <p className="hint">
-          Herinneringen werken zolang de app open is of op de achtergrond actief blijft. {isIOS() ? 'Op iPhone werken meldingen alleen als Alignerly op je beginscherm staat (iOS 16.4+).' : ''}
+          Herinneringen werken zolang de app open is of op de achtergrond actief blijft. {isIOS() ? 'Op iPhone werken meldingen alleen als Jessmile op je beginscherm staat (iOS 16.4+).' : ''}
         </p>
       </section>
 
@@ -196,10 +196,10 @@ export function SettingsView({ onOpenDay }: { onOpenDay: (d: string) => void }) 
           </h2>
           {install.canPrompt ? (
             <button className="btn btn-primary" onClick={() => install.prompt()}>
-              Alignerly installeren
+              Jessmile installeren
             </button>
           ) : isIOS() ? (
-            <p className="hint">Tik in Safari op <strong>Deel</strong> en kies <strong>Zet op beginscherm</strong>. Alignerly opent dan als een echte app.</p>
+            <p className="hint">Tik in Safari op <strong>Deel</strong> en kies <strong>Zet op beginscherm</strong>. Jessmile opent dan als een echte app.</p>
           ) : (
             <p className="hint">Open het browsermenu en kies <strong>App installeren</strong> of <strong>Toevoegen aan startscherm</strong>.</p>
           )}
@@ -209,7 +209,7 @@ export function SettingsView({ onOpenDay }: { onOpenDay: (d: string) => void }) 
       <footer className="about">
         <Logo size={36} />
         <p>
-          <strong>Alignerly</strong> · Jessica’s beugeltracker
+          <strong>Jessmile</strong> · Jessica’s beugeltracker
           <br />
           <span className="muted">Versie {__APP_VERSION__}</span>
         </p>

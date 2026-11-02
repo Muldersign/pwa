@@ -1,4 +1,4 @@
-// Imported by the generated service worker: tapping a reminder opens (or focuses) Alignerly.
+// Imported by the generated service worker: tapping a reminder opens (or focuses) Jessmile.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
